@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Simulateur Procédural ATV320 - Version Expert V3</title>
+    <title>Simulateur Procédural ATV320 - Version Expert V3.3 (Auto-Save)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body {
@@ -26,6 +26,7 @@
             margin-bottom: 15px;
             flex-wrap: wrap;
             justify-content: center;
+            align-items: center;
         }
         .btn-outil {
             background: #2cb67d;
@@ -40,6 +41,20 @@
         }
         .btn-outil.challenge { background: #ff8e3c; color: #fff; }
         .btn-outil.json { background: #7f5af0; color: #fff; }
+        .btn-outil.reset-cache { background: #e53170; color: #fff; }
+
+        .tag-save {
+            font-size: 11px;
+            color: #2cb67d;
+            background: #102a20;
+            border: 1px solid #2cb67d;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: opacity 0.3s ease;
+        }
 
         .plateforme { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; max-width: 1400px; width: 100%; }
 
@@ -50,8 +65,6 @@
             font-size: 36px; font-weight: bold; text-align: right; padding: 12px; border-radius: 6px;
             margin-bottom: 15px; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); height: 42px; line-height: 42px;
         }
-        .clignotement { animation: clignoterLed 0.25s infinite alternate; }
-        @keyframes clignoterLed { from { opacity: 1; } to { opacity: 0.1; } }
 
         .controles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         button.btn-atv { background-color: #383a40; color: white; border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; }
@@ -81,9 +94,9 @@
         .switch-btn { background: #555; color: white; border: none; padding: 4px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; }
         .switch-btn.active { background: #7f5af0; }
 
-        /* OSCILLOSCOPE & U/F */
-        .carte-visu { background: #242629; border: 2px solid #383a40; border-radius: 12px; padding: 15px; width: 330px; display: flex; flex-direction: column; gap: 10px; }
-        canvas { background: #0f0e17; border: 1px solid #383a40; border-radius: 6px; width: 100%; height: 95px; }
+        /* OSCILLOSCOPE, U/F & TACHYMÈTRE */
+        .carte-visu { background: #242629; border: 2px solid #383a40; border-radius: 12px; padding: 15px; width: 330px; display: flex; flex-direction: column; gap: 8px; }
+        canvas { background: #0f0e17; border: 1px solid #383a40; border-radius: 6px; width: 100%; height: 80px; }
 
         /* PANNEAU EVALUATION & CHALLENGE */
         .carte-droite { background: #242629; border: 2px solid #383a40; border-radius: 12px; padding: 15px; width: 340px; }
@@ -108,6 +121,9 @@
     <button class="btn-outil json" onclick="document.getElementById('import-json').click()">📂 Importer Config</button>
     <input type="file" id="import-json" accept=".json" onchange="importerJSON(event)">
     <button class="btn-outil challenge" onclick="lancerChallenge()">⏱️ Mode Challenge Dépannage</button>
+    <button class="btn-outil" style="background:#e53170; color:#fff;" onclick="reinitialiserDefauts()">🔄 Acquit Défaut</button>
+    <button class="btn-outil reset-cache" onclick="effacerLocalStorage()">🗑️ Réinitialiser TP</button>
+    <div class="tag-save" id="tag-save">💾 Auto-sauvegardé</div>
 </div>
 
 <div class="plateforme">
@@ -167,8 +183,11 @@
         <button class="btn-action" style="margin-top:10px; background:#7f5af0; color:#fff;" id="btn-audio" onclick="basculerAudio()">🔊 Acoustic MLI (SFr)</button>
     </div>
 
-    <!-- VISUALISATION OSCILLOSCOPE MLI & LOI U/F -->
+    <!-- VISUALISATION OSCILLOSCOPE MLI, LOI U/F & PROFIL DE VITESSE -->
     <div class="carte-visu">
+        <div class="section-title">📉 Profil de Vitesse f(t) en Temps Réel (Hz)</div>
+        <canvas id="graph-vitesse"></canvas>
+
         <div class="section-title">📊 Signal PWM MLI (Découpage IGBT)</div>
         <canvas id="oscillo-mli"></canvas>
 
@@ -181,8 +200,8 @@
         <div class="chrono-box" id="chrono-box">⏱️ Temps Challenge : <span id="chrono-val">00:00</span></div>
 
         <div class="champs-etudiant">
-            <input type="text" id="nom-etudiant" class="input-etudiant" placeholder="Nom">
-            <input type="text" id="prenom-etudiant" class="input-etudiant" placeholder="Prénom">
+            <input type="text" id="nom-etudiant" class="input-etudiant" placeholder="Nom" oninput="sauvegarderDansLocalStorage()">
+            <input type="text" id="prenom-etudiant" class="input-etudiant" placeholder="Prénom" oninput="sauvegarderDansLocalStorage()">
         </div>
 
         <select id="select-tp" class="select-tp" onchange="changerTP()">
@@ -190,7 +209,7 @@
             <option value="tp2">TP 2 : Plaque Signalétique & Auto-réglage</option>
             <option value="tp3">TP 3 : Configuration Relais R1 / R2</option>
             <option value="tp4">TP 4 : Ajustement Découpage MLI (SFr)</option>
-            <option value="tp5">TP 5 : Diagnostic Pannes Câblage Ligne</option>
+            <option value="tp5">TP 5 : Multi-vitesses & Dépannage</option>
         </select>
 
         <div class="consigne-box" id="consigne-tp"></div>
@@ -208,7 +227,8 @@
 </div>
 
 <script>
-    // 1. Structure Arborescente ATV320 avec Relais et Fréquence Découpage (SFr)
+    const STORAGE_KEY = "ATV320_SIMULATOR_STATE_V1";
+
     const valeursUsineDefaut = {
         bFr: 50.0, UnS: 400.0, nCr: 4.2, FrS: 50.0, nSP: 1440, tUn: "dOn", FCS: "nO",
         Cd1: "tEr", Fr1: "PSS", ACC: 3.0, dEC: 3.0, LSP: 0.0, HSP: 50.0, SP2: 15.0, SP3: 30.0,
@@ -223,7 +243,7 @@
                         { id: "bFr", type: "param", valeur: 50.0, pas: 10.0, paramKey: "bFr" },
                         { id: "UnS", type: "param", valeur: 400.0, pas: 10.0, paramKey: "UnS" },
                         { id: "nCr", type: "param", valeur: 4.2, pas: 0.1, paramKey: "nCr" },
-                        { id: "SFr", type: "param", valeur: 4.0, pas: 1.0, paramKey: "SFr" }, // 2 à 16 kHz
+                        { id: "SFr", type: "param", valeur: 4.0, pas: 1.0, paramKey: "SFr" },
                         { id: "tUn", type: "enum", options: ["nO", "YES", "dOn"], indexOpt: 2, paramKey: "tUn" },
                         { id: "FCS", type: "enum", options: ["nO", "InI"], indexOpt: 0, paramKey: "FCS" }
                     ]},
@@ -236,6 +256,10 @@
                         { id: "dEC", type: "param", valeur: 3.0, pas: 0.1, paramKey: "dEC" },
                         { id: "LSP", type: "param", valeur: 0.0, pas: 0.1, paramKey: "LSP" },
                         { id: "HSP", type: "param", valeur: 50.0, pas: 0.1, paramKey: "HSP" },
+                        { id: "PSS-", type: "menu", enfants: [
+                            { id: "SP2", type: "param", valeur: 15.0, pas: 1.0, paramKey: "SP2" },
+                            { id: "SP3", type: "param", valeur: 30.0, pas: 1.0, paramKey: "SP3" }
+                        ]},
                         { id: "rI-", type: "menu", enfants: [
                             { id: "r1", type: "enum", options: ["FLt", "rUn"], indexOpt: 0, paramKey: "r1" },
                             { id: "r2", type: "enum", options: ["rUn", "FLt"], indexOpt: 0, paramKey: "r2" }
@@ -251,31 +275,41 @@
         tp2: { titre: "TP 2 : Plaque & Tuning", consignes: "Régler <strong>UnS = 400.0 V</strong>, <strong>nCr = 4.2 A</strong> et <strong>tUn = dOn</strong>.", attentes: { UnS: 400.0, nCr: 4.2, tUn: "dOn" } },
         tp3: { titre: "TP 3 : Relais de Signalisation", consignes: "Affecter le relais <strong>r2 = rUn</strong> (Signalisation marche) dans FUn- > rI-.", attentes: { r2: "rUn" } },
         tp4: { titre: "TP 4 : Frequence Découpage MLI", consignes: "Augmenter la fréquence de hachage IGBT à <strong>SFr = 12.0 kHz</strong> pour réduire le bruit.", attentes: { SFr: 12.0 } },
-        tp5: { titre: "TP 5 : Diagnostic Câblage", consignes: "Raccorder les lignes de puissance et régler <strong>Cd1 = tEr</strong>.", attentes: { Cd1: "tEr" } }
+        tp5: { titre: "TP 5 : Multi-vitesses & Câblage", consignes: "Régler <strong>SP2 = 15.0 Hz</strong>, <strong>SP3 = 30.0 Hz</strong> et raccorder toutes les lignes.", attentes: { SP2: 15.0, SP3: 30.0, Cd1: "tEr" } }
     };
 
-    // État Système & Câblage
     let cablage = { alim: true, moteur: true, pot: true };
     let di1 = false, di2 = false, di3 = false, di4 = false;
     let tensionAI1 = 5.0;
     let frequenceReelle = 0.0;
+    let sensInverse = false;
     let defautActif = null;
     let runHMI = false;
+    let tempsFonctionnementMoteur = 0;
     let cheminActuel = [menuATV320];
     let indexActuel = 0;
     let modeEdition = false;
 
-    // Challenge Dépannage
     let modeChallenge = false;
     let secondesChrono = 0;
     let timerInterval = null;
 
-    // Audio & Canvas
+    const MAX_HISTORIQUE = 150;
+    let historiqueVitesse = new Array(MAX_HISTORIQUE).fill(0);
+
     let audioCtx = null, oscIGBT = null, gainMaster = null, audioAutorise = false;
+    const canvasVitesse = document.getElementById("graph-vitesse");
+    const ctxVitesse = canvasVitesse.getContext("2d");
     const canvasMLI = document.getElementById("oscillo-mli");
     const ctxMLI = canvasMLI.getContext("2d");
     const canvasUF = document.getElementById("graph-uf");
     const ctxUF = canvasUF.getContext("2d");
+
+    function logConsole(msg) {
+        const consoleEl = document.getElementById("console-modbus");
+        consoleEl.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
 
     function obtenirValeurParam(key) {
         let res = null;
@@ -291,22 +325,123 @@
         function chercher(n) {
             if (n.paramKey === key) {
                 if (n.type === "enum") n.indexOpt = n.options.indexOf(val);
-                else n.valeur = val;
+                else n.valeur = parseFloat(val);
             }
             if (n.enfants) n.enfants.forEach(chercher);
         }
         chercher(menuATV320);
     }
 
-    // 2. Gestion du Câblage Virtuel
+    /* GESTION LOCALSTORAGE DU TP */
+    function sauvegarderDansLocalStorage() {
+        let params = {};
+        for (let k in valeursUsineDefaut) params[k] = obtenirValeurParam(k);
+
+        const etatTotal = {
+            paramsATV: params,
+            cablage: cablage,
+            entreesLogiques: { di1, di2, di3, di4 },
+            tensionAI1: tensionAI1,
+            etudiant: {
+                nom: document.getElementById("nom-etudiant").value,
+                prenom: document.getElementById("prenom-etudiant").value,
+                tpClef: document.getElementById("select-tp").value
+            }
+        };
+
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(etatTotal));
+            const tag = document.getElementById("tag-save");
+            tag.style.opacity = "1";
+            setTimeout(() => { tag.style.opacity = "0.6"; }, 800);
+        } catch(e) {
+            console.error("Erreur d'écriture dans le LocalStorage :", e);
+        }
+    }
+
+    function chargerDepuisLocalStorage() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return false;
+            const state = JSON.parse(raw);
+
+            if (state.paramsATV) {
+                for (let k in state.paramsATV) fixerValeurParam(k, state.paramsATV[k]);
+            }
+            if (state.cablage) {
+                cablage = state.cablage;
+                for (let type in cablage) {
+                    const btn = document.getElementById(`btn-cabl-${type}`);
+                    if (btn) {
+                        btn.className = cablage[type] ? "btn-fil connecte" : "btn-fil";
+                        btn.innerText = cablage[type] ? "RACCORDÉ" : "COUPÉ";
+                    }
+                }
+            }
+            if (state.entreesLogiques) {
+                di1 = !!state.entreesLogiques.di1;
+                di2 = !!state.entreesLogiques.di2;
+                di3 = !!state.entreesLogiques.di3;
+                di4 = !!state.entreesLogiques.di4;
+                for (let i = 1; i <= 4; i++) {
+                    let st = eval(`di${i}`);
+                    let btn = document.getElementById(`sw-di${i}`);
+                    if (btn) {
+                        btn.className = st ? "switch-btn active" : "switch-btn";
+                        btn.innerText = st ? "ON" : "OFF";
+                    }
+                }
+            }
+            if (state.tensionAI1 !== undefined) {
+                tensionAI1 = state.tensionAI1;
+                document.getElementById("slider-ai1").value = tensionAI1;
+                document.getElementById("val-ai1").innerText = tensionAI1.toFixed(1) + " V";
+            }
+            if (state.etudiant) {
+                if (state.etudiant.nom) document.getElementById("nom-etudiant").value = state.etudiant.nom;
+                if (state.etudiant.prenom) document.getElementById("prenom-etudiant").value = state.etudiant.prenom;
+                if (state.etudiant.tpClef) document.getElementById("select-tp").value = state.etudiant.tpClef;
+            }
+            logConsole("💾 Session précédente restaurée depuis la mémoire locale.");
+            return true;
+        } catch(e) {
+            console.error("Erreur de chargement du LocalStorage :", e);
+            return false;
+        }
+    }
+
+    function effacerLocalStorage() {
+        if (confirm("⚠️ Voulez-vous vraiment réinitialiser l'ensemble du TP et effacer le cache local ?")) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+    }
+
     function basculerCablage(type) {
         cablage[type] = !cablage[type];
         const btn = document.getElementById(`btn-cabl-${type}`);
         btn.className = cablage[type] ? "btn-fil connecte" : "btn-fil";
         btn.innerText = cablage[type] ? "RACCORDÉ" : "COUPÉ";
+        logConsole(`Câblage [${type.toUpperCase()}] : ${cablage[type] ? 'Raccordé' : 'Coupé'}`);
+        sauvegarderDansLocalStorage();
     }
 
-    // 3. Navigation Clavier ATV320
+    function basculerDI(num) {
+        if (num === 1) di1 = !di1; else if (num === 2) di2 = !di2;
+        else if (num === 3) di3 = !di3; else if (num === 4) di4 = !di4;
+        let btn = document.getElementById(`sw-di${num}`);
+        let state = eval(`di${num}`);
+        btn.className = state ? "switch-btn active" : "switch-btn";
+        btn.innerText = state ? "ON" : "OFF";
+        sauvegarderDansLocalStorage();
+    }
+
+    function ajusterAI1(val) {
+        tensionAI1 = parseFloat(val);
+        document.getElementById("val-ai1").innerText = tensionAI1.toFixed(1) + " V";
+        sauvegarderDansLocalStorage();
+    }
+
     function mettreAjourEcran() {
         const ecran = document.getElementById("affichage");
         if (!cablage.alim) { ecran.innerText = ""; ecran.style.background = "#050505"; return; }
@@ -318,8 +453,13 @@
         let item = noeudActuel.enfants ? noeudActuel.enfants[indexActuel] : null;
 
         if (cheminActuel.length === 1 && !modeEdition) {
-            if (frequenceReelle > 0.1) { ecran.innerText = frequenceReelle.toFixed(1); ecran.style.color = "#2cb67d"; }
-            else { ecran.innerText = "rdY"; ecran.style.color = "#e53170"; }
+            if (Math.abs(frequenceReelle) > 0.1) {
+                ecran.innerText = (sensInverse ? "-" : "") + Math.abs(frequenceReelle).toFixed(1);
+                ecran.style.color = "#2cb67d";
+            } else {
+                ecran.innerText = "rdY";
+                ecran.style.color = "#e53170";
+            }
             return;
         }
 
@@ -338,6 +478,7 @@
         if (modeEdition && item) {
             if (item.type === "enum") item.indexOpt = (item.indexOpt + 1) % item.options.length;
             else item.valeur = parseFloat((item.valeur + item.pas).toFixed(1));
+            sauvegarderDansLocalStorage();
         } else if (noeud.enfants && indexActuel < noeud.enfants.length - 1) indexActuel++;
         mettreAjourEcran();
     }
@@ -348,6 +489,7 @@
         if (modeEdition && item) {
             if (item.type === "enum") item.indexOpt = (item.indexOpt - 1 + item.options.length) % item.options.length;
             else if (item.valeur - item.pas >= 0) item.valeur = parseFloat((item.valeur - item.pas).toFixed(1));
+            sauvegarderDansLocalStorage();
         } else if (indexActuel > 0) indexActuel--;
         mettreAjourEcran();
     }
@@ -356,7 +498,7 @@
         if (cheminActuel.length === 1) { cheminActuel = [menuATV320.enfants[0]]; indexActuel = 0; mettreAjourEcran(); return; }
         let noeud = cheminActuel[cheminActuel.length - 1];
         let selection = noeud.enfants[indexActuel];
-        if (modeEdition) { modeEdition = false; }
+        if (modeEdition) { modeEdition = false; sauvegarderDansLocalStorage(); }
         else if (selection.type === "menu") { cheminActuel.push(selection); indexActuel = 0; }
         else if (selection.type === "param" || selection.type === "enum") { modeEdition = true; }
         mettreAjourEcran();
@@ -371,54 +513,80 @@
     function actionRunHMI() { if (obtenirValeurParam("Cd1") === "HMI" && !defautActif) runHMI = true; }
     function actionStopHMI() { runHMI = false; }
 
-    function basculerDI(num) {
-        if (num === 1) di1 = !di1; else if (num === 2) di2 = !di2;
-        else if (num === 3) di3 = !di3; else if (num === 4) di4 = !di4;
-        let btn = document.getElementById(`sw-di${num}`);
-        let state = eval(`di${num}`);
-        btn.className = state ? "switch-btn active" : "switch-btn";
-        btn.innerText = state ? "ON" : "OFF";
+    function reinitialiserDefauts() {
+        defautActif = null;
+        tempsFonctionnementMoteur = 0;
+        logConsole("Acquittement manuel des défauts.");
+        mettreAjourEcran();
     }
 
-    function ajusterAI1(val) {
-        tensionAI1 = parseFloat(val);
-        document.getElementById("val-ai1").innerText = tensionAI1.toFixed(1) + " V";
-    }
-
-    // 4. Moteur de Simulation Principale
     function boucleMoteur() {
-        if (!cablage.alim) defautActif = "NLP"; // No Line Power
-        else if (!cablage.moteur && frequenceReelle > 0.5) defautActif = "OPF1"; // Output Phase Loss
-        
         const cd1 = obtenirValeurParam("Cd1");
         const fr1 = obtenirValeurParam("Fr1");
         const hsp = obtenirValeurParam("HSP") || 50.0;
+        const lsp = obtenirValeurParam("LSP") || 0.0;
         const acc = obtenirValeurParam("ACC") || 3.0;
         const dec = obtenirValeurParam("dEC") || 3.0;
+        const sfr = obtenirValeurParam("SFr") || 4.0;
+
+        if (!cablage.alim) defautActif = "NLP";
+        else if (!cablage.moteur && Math.abs(frequenceReelle) > 0.5) defautActif = "OPF1";
+        else if (acc < 0.5 && Math.abs(frequenceReelle) > 1.0) defautActif = "OCF";
+        else if (fr1 === "AIV1" && tensionAI1 < 0.2 && cablage.pot) defautActif = "AnF";
+        else if (sfr > 12.0 && tempsFonctionnementMoteur > 150) defautActif = "OHF";
 
         let ordreRun = false;
+        sensInverse = false;
+
         if (!defautActif) {
-            if (cd1 === "tEr" && (di1 || di2)) ordreRun = true;
-            if (cd1 === "HMI" && runHMI) ordreRun = true;
+            if (cd1 === "tEr") {
+                if (di1 && !di2) { ordreRun = true; sensInverse = false; }
+                else if (di2 && !di1) { ordreRun = true; sensInverse = true; }
+            } else if (cd1 === "HMI" && runHMI) {
+                ordreRun = true;
+            }
         }
 
-        let consigne = 0.0;
+        let consigneCible = 0.0;
         if (ordreRun) {
-            consigne = (fr1 === "AIV1" && cablage.pot) ? (tensionAI1 / 10.0) * hsp : hsp;
+            const sp2 = obtenirValeurParam("SP2") || 15.0;
+            const sp3 = obtenirValeurParam("SP3") || 30.0;
+
+            if (fr1 === "PSS") {
+                if (di3 && !di4) consigneCible = sp2;
+                else if (di3 && di4) consigneCible = sp3;
+                else consigneCible = hsp;
+            } else if (fr1 === "AIV1" && cablage.pot) {
+                consigneCible = lsp + (tensionAI1 / 10.0) * (hsp - lsp);
+            } else {
+                consigneCible = hsp;
+            }
         }
 
-        if (frequenceReelle < consigne) frequenceReelle = Math.min(consigne, frequenceReelle + (hsp / acc) * 0.05);
-        else if (frequenceReelle > consigne) frequenceReelle = Math.max(0, frequenceReelle - (hsp / dec) * 0.05);
+        let pasAcc = (hsp / Math.max(acc, 0.1)) * 0.05;
+        let pasDec = (hsp / Math.max(dec, 0.1)) * 0.05;
 
-        // Pilotage des Relais R1 & R2
+        if (Math.abs(frequenceReelle) < consigneCible) {
+            frequenceReelle = Math.min(consigneCible, Math.abs(frequenceReelle) + pasAcc);
+        } else if (Math.abs(frequenceReelle) > consigneCible) {
+            frequenceReelle = Math.max(0, Math.abs(frequenceReelle) - pasDec);
+        }
+
+        if (Math.abs(frequenceReelle) > 0.1) tempsFonctionnementMoteur++;
+        else tempsFonctionnementMoteur = 0;
+
+        historiqueVitesse.push((sensInverse ? -1 : 1) * frequenceReelle);
+        if (historiqueVitesse.length > MAX_HISTORIQUE) historiqueVitesse.shift();
+
         const r1Val = obtenirValeurParam("r1");
         const r2Val = obtenirValeurParam("r2");
-        const estEnMarche = frequenceReelle > 0.1;
+        const estEnMarche = Math.abs(frequenceReelle) > 0.1;
 
         document.getElementById("led-r1").className = (r1Val === "FLt" && defautActif) || (r1Val === "rUn" && estEnMarche) ? "led rouge actif" : "led rouge";
         document.getElementById("led-r2").className = (r2Val === "rUn" && estEnMarche) || (r2Val === "FLt" && defautActif) ? "led verte actif" : "led verte";
 
         mettreAjourAudio();
+        dessinerGraphVitesse();
         dessinerOscilloMLI();
         dessinerGraphUF();
         mettreAjourEcran();
@@ -426,15 +594,41 @@
         setTimeout(boucleMoteur, 50);
     }
 
-    // 5. Visualisation Graphique (MLI PWM & Loi U/f)
+    function dessinerGraphVitesse() {
+        ctxVitesse.clearRect(0, 0, canvasVitesse.width, canvasVitesse.height);
+        const yZero = canvasVitesse.height / 2;
+        ctxVitesse.strokeStyle = "#383a40";
+        ctxVitesse.lineWidth = 1;
+        ctxVitesse.beginPath();
+        ctxVitesse.moveTo(0, yZero);
+        ctxVitesse.lineTo(canvasVitesse.width, yZero);
+        ctxVitesse.stroke();
+
+        const hsp = obtenirValeurParam("HSP") || 60.0;
+        const echelleY = (canvasVitesse.height / 2 - 10) / Math.max(hsp, 50.0);
+        const pasX = canvasVitesse.width / (MAX_HISTORIQUE - 1);
+
+        ctxVitesse.strokeStyle = sensInverse ? "#e53170" : "#2cb67d";
+        ctxVitesse.lineWidth = 2;
+        ctxVitesse.beginPath();
+
+        for (let i = 0; i < historiqueVitesse.length; i++) {
+            let x = i * pasX;
+            let y = yZero - (historiqueVitesse[i] * echelleY);
+            if (i === 0) ctxVitesse.moveTo(x, y);
+            else ctxVitesse.lineTo(x, y);
+        }
+        ctxVitesse.stroke();
+    }
+
     function dessinerOscilloMLI() {
         ctxMLI.clearRect(0, 0, canvasMLI.width, canvasMLI.height);
         const sfr = obtenirValeurParam("SFr") || 4.0;
         ctxMLI.strokeStyle = "#2cb67d"; ctxMLI.lineWidth = 1.5; ctxMLI.beginPath();
         
         for (let x = 0; x < canvasMLI.width; x++) {
-            let pwm = Math.sin(x * 0.05) > Math.sin(x * sfr * 0.2) ? 15 : 75;
-            if (frequenceReelle < 0.1) pwm = 45;
+            let pwm = Math.sin(x * 0.05) > Math.sin(x * sfr * 0.2) ? 15 : 65;
+            if (Math.abs(frequenceReelle) < 0.1) pwm = 40;
             if (x === 0) ctxMLI.moveTo(x, pwm); else ctxMLI.lineTo(x, pwm);
         }
         ctxMLI.stroke();
@@ -443,20 +637,19 @@
     function dessinerGraphUF() {
         ctxUF.clearRect(0, 0, canvasUF.width, canvasUF.height);
         ctxUF.strokeStyle = "#ff8e3c"; ctxUF.lineWidth = 2; ctxUF.beginPath();
-        ctxUF.moveTo(20, 80); ctxUF.lineTo(180, 20); ctxUF.lineTo(280, 20); ctxUF.stroke();
+        ctxUF.moveTo(20, 70); ctxUF.lineTo(180, 15); ctxUF.lineTo(280, 15); ctxUF.stroke();
 
-        // Point de fonctionnement courant
-        let posX = 20 + (frequenceReelle / 50.0) * 160;
-        let posY = 80 - (Math.min(frequenceReelle, 50.0) / 50.0) * 60;
-        ctxUF.fillStyle = "#7f5af0"; ctxUF.beginPath(); ctxUF.arc(posX, posY, 5, 0, Math.PI * 2); ctxUF.fill();
+        let posX = 20 + (Math.abs(frequenceReelle) / 50.0) * 160;
+        let posY = 70 - (Math.min(Math.abs(frequenceReelle), 50.0) / 50.0) * 55;
+        ctxUF.fillStyle = sensInverse ? "#e53170" : "#7f5af0";
+        ctxUF.beginPath(); ctxUF.arc(posX, posY, 5, 0, Math.PI * 2); ctxUF.fill();
     }
 
-    // 6. Audio MLI Dynamique (SFr)
     function mettreAjourAudio() {
         if (audioAutorise && oscIGBT) {
             const sfr = obtenirValeurParam("SFr") || 4.0;
             oscIGBT.frequency.value = sfr * 1000;
-            gainMaster.gain.value = frequenceReelle > 0.1 ? 0.03 : 0;
+            gainMaster.gain.value = Math.abs(frequenceReelle) > 0.1 ? 0.03 : 0;
         }
     }
 
@@ -472,7 +665,6 @@
         document.getElementById("btn-audio").style.background = audioAutorise ? "#2cb67d" : "#7f5af0";
     }
 
-    // 7. Mode Challenge Dépannage & Export/Import JSON
     function lancerChallenge() {
         modeChallenge = true;
         secondesChrono = 0;
@@ -486,13 +678,15 @@
             document.getElementById("chrono-val").innerText = `${m}:${s}`;
         }, 1000);
 
-        // Perturbations aléatoires
         cablage.moteur = false;
         fixerValeurParam("Cd1", "Mdb");
-        fixerValeurParam("SFr", 2.0);
+        fixerValeurParam("ACC", 0.2);
+        fixerValeurParam("SFr", 16.0);
         document.getElementById("btn-cabl-mot").className = "btn-fil";
         document.getElementById("btn-cabl-mot").innerText = "COUPÉ";
-        alert("⏱️ CHALLENGE LANCÉ !\nUn ou plusieurs défauts ont été injectés. Rétablissez le fonctionnement normal le plus rapidement possible.");
+        logConsole("⚠️ [CHALLENGE] Défauts d'accélération et de câblage injectés !");
+        sauvegarderDansLocalStorage();
+        alert("⏱️ CHALLENGE LANCÉ !\nDéfauts injectés. Diagnostiquez et rétablissez la marche normale !");
     }
 
     function exporterJSON() {
@@ -508,6 +702,7 @@
         reader.onload = (e) => {
             let config = JSON.parse(e.target.result);
             for (let k in config) fixerValeurParam(k, config[k]);
+            sauvegarderDansLocalStorage();
             alert("Configuration JSON chargée avec succès !");
             mettreAjourEcran();
         };
@@ -515,8 +710,10 @@
     }
 
     function changerTP() {
-        const tp = banquesTP[document.getElementById("select-tp").value];
+        const tpKey = document.getElementById("select-tp").value;
+        const tp = banquesTP[tpKey];
         document.getElementById("consigne-tp").innerHTML = `<strong>${tp.titre}</strong><br>${tp.consignes}`;
+        sauvegarderDansLocalStorage();
     }
 
     function evaluerTP() {
@@ -534,13 +731,39 @@
     }
 
     function exporterPDF() {
+        const nom = document.getElementById("nom-etudiant").value || "Non renseigné";
+        const prenom = document.getElementById("prenom-etudiant").value || "Non renseigné";
+        const tpTitre = banquesTP[document.getElementById("select-tp").value].titre;
+        
+        let modifsHTML = "";
+        for (let k in valeursUsineDefaut) {
+            let val = obtenirValeurParam(k);
+            if (val !== valeursUsineDefaut[k]) {
+                modifsHTML += `<li><strong>${k}</strong> : ${val} (Usine : ${valeursUsineDefaut[k]})</li>`;
+            }
+        }
+        if (!modifsHTML) modifsHTML = "<li>Aucun paramètre modifié par rapport à l'usine.</li>";
+
         let el = document.createElement("div");
-        el.style.padding = "20px";
-        el.innerHTML = `<h2>Rapport TP ATV320</h2><p>Évalué le ${new Date().toLocaleString()}</p>${document.getElementById("resultat-tp").innerHTML}`;
-        html2pdf().from(el).save("Rapport_TP_ATV320.pdf");
+        el.style.padding = "25px";
+        el.style.fontFamily = "Arial, sans-serif";
+        el.style.color = "#111";
+        el.innerHTML = `
+            <h1 style="color:#2cb67d; border-bottom:2px solid #2cb67d;">Bilan Évaluation ATV320</h1>
+            <p><strong>Stagiaire / Étudiant :</strong> ${prenom} ${nom}</p>
+            <p><strong>Module :</strong> ${tpTitre}</p>
+            <p><strong>Date :</strong> ${new Date().toLocaleString()}</p>
+            <hr>
+            <h3>Résultats d'évaluation</h3>
+            <p>${document.getElementById("resultat-tp").innerHTML}</p>
+            <h3>Paramètres Modifiés :</h3>
+            <ul>${modifsHTML}</ul>
+        `;
+        html2pdf().from(el).save(`Rapport_ATV320_${nom}_${prenom}.pdf`);
     }
 
     document.addEventListener("DOMContentLoaded", () => {
+        chargerDepuisLocalStorage();
         changerTP();
         mettreAjourEcran();
         boucleMoteur();
