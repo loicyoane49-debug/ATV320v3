@@ -60,7 +60,7 @@
         .plateforme { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; max-width: 1400px; width: 100%; }
 
         /* VARIATEUR & RELAIS */
-        .variateur { background-color: #242629; padding: 18px; border-radius: 12px; border: 2px solid #383a40; width: 310px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        .variateur { background-color: #242629; padding: 18px; border-radius: 12px; border: 2px solid #383a40; width: 310px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); box-sizing: border-box; }
         .ecran {
             background-color: #0f0e17; color: #ff8e3c; font-family: 'Courier New', monospace;
             font-size: 36px; font-weight: bold; text-align: right; padding: 12px; border-radius: 6px;
@@ -84,7 +84,7 @@
         .led.rouge.actif { background: #e53170; box-shadow: 0 0 10px #e53170; }
 
         /* BORNIER & CÂBLAGE VIRTUEL */
-        .carte-bornier { background: #242629; border: 2px solid #383a40; border-radius: 12px; padding: 15px; width: 310px; }
+        .carte-bornier { background: #242629; border: 2px solid #383a40; border-radius: 12px; padding: 15px; width: 310px; box-sizing: border-box; }
         .section-title { font-size: 12px; color: #2cb67d; font-weight: bold; margin-bottom: 8px; text-align: center; border-bottom: 1px solid #383a40; padding-bottom: 4px; }
         .cablan-item { display: flex; justify-content: space-between; align-items: center; background: #16161a; padding: 6px 10px; border-radius: 4px; margin-bottom: 6px; font-size: 11px; }
         .btn-fil { background: #e53170; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 10px; }
@@ -96,11 +96,11 @@
         .switch-btn.active { background: #7f5af0; }
 
         /* OSCILLOSCOPE, U/F & TACHYMÈTRE */
-        .carte-visu { background: #242629; border: 2px solid #383a40; border-radius: 12px; padding: 15px; width: 330px; display: flex; flex-direction: column; gap: 8px; }
+        .carte-visu { background: #242629; border: 2px solid #383a40; border-radius: 12px; padding: 15px; width: 330px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box; }
         canvas { background: #0f0e17; border: 1px solid #383a40; border-radius: 6px; width: 100%; height: 80px; }
 
         /* PANNEAU EVALUATION & CHALLENGE */
-        .carte-droite { background: #242629; border: 2px solid #383a40; border-radius: 12px; padding: 15px; width: 340px; }
+        .carte-droite { background: #242629; border: 2px solid #383a40; border-radius: 12px; padding: 15px; width: 340px; box-sizing: border-box; }
         .chrono-box { background: #ff8e3c; color: #000; text-align: center; font-weight: bold; padding: 6px; border-radius: 6px; margin-bottom: 10px; font-size: 14px; display: none; }
         
         .champs-etudiant { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
@@ -113,7 +113,7 @@
         .btn-pdf { background: #ff8e3c; color: #000; display: none; margin-top: 6px; }
         .terminal-modbus { background: #0f0e17; border: 1px solid #383a40; border-radius: 6px; height: 60px; padding: 4px; font-family: monospace; font-size: 9px; color: #2cb67d; overflow-y: auto; margin-top: 8px; }
 
-        /* SECTION LECTEUR ET PREVISUALISATION PDF */
+        /* SECTION LECTEUR ET PREVISUALISATION PDF (OPTION 3 : ACCESSIBILITÉ ET RESPONSIVITÉ MOBILE) */
         .conteneur-pdf-viewer {
             display: none;
             width: 100%;
@@ -124,6 +124,7 @@
             border-radius: 12px;
             padding: 15px;
             box-sizing: border-box;
+            overflow-x: auto;
         }
         .visionneuse-papier {
             background: #ffffff;
@@ -135,6 +136,9 @@
             font-size: 13px;
             line-height: 1.5;
             user-select: text;
+            max-width: 100%;
+            box-sizing: border-box;
+            word-wrap: break-word;
         }
         .visionneuse-papier h1 {
             color: #008055;
@@ -151,6 +155,44 @@
         }
         .visionneuse-papier ul {
             padding-left: 20px;
+        }
+
+        /* OPTION 3 : ADAPTATION RESPONSIVE SMARTPHONES & WEBVIEWS */
+        @media (max-width: 768px) {
+            body {
+                padding: 8px;
+            }
+            .barre-outils {
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .btn-outil {
+                width: 100%;
+                text-align: center;
+                padding: 10px;
+                font-size: 12px;
+            }
+            .tag-save {
+                justify-content: center;
+            }
+            .variateur, .carte-bornier, .carte-visu, .carte-droite {
+                width: 100%;
+                max-width: 100%;
+            }
+            .conteneur-pdf-viewer {
+                padding: 10px;
+            }
+            .visionneuse-papier {
+                padding: 15px;
+                font-size: 12px;
+            }
+            .visionneuse-papier h1 {
+                font-size: 16px;
+            }
+            .visionneuse-papier h3 {
+                font-size: 13px;
+            }
         }
 
         input[type="file"] { display: none; }
@@ -288,35 +330,37 @@
         
         <p><strong>Arborescence des menus :</strong> COnF ➔ FULL ➔ drC- / CtL- / FUn-</p>
 
-        <table style="width:100%; border-collapse:collapse; margin-top:10px; font-size:12px;">
-            <thead>
-                <tr style="background:#16161a; color:#2cb67d; text-align:left;">
-                    <th style="padding:8px; border:1px solid #383a40;">Code</th>
-                    <th style="padding:8px; border:1px solid #383a40;">Sous-Menu</th>
-                    <th style="padding:8px; border:1px solid #383a40;">Désignation / Fonction</th>
-                    <th style="padding:8px; border:1px solid #383a40;">Valeur d'Usine</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>bFr</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Fréquence standard moteur (Hz)</td><td>50.0 Hz</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>UnS</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Tension nominale moteur (V)</td><td>400.0 V</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>nCr</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Courant nominal moteur (A)</td><td>4.2 A</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>FrS</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Fréquence nominale moteur (Hz)</td><td>50.0 Hz</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>nSP</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Vitesse nominale moteur (tr/min)</td><td>1440 RPM</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>tUn</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Auto-réglage / Tuning (nO / YES / dOn)</td><td>dOn</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>SFr</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Fréquence de découpage MLI (kHz)</td><td>4.0 kHz</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>Cd1</b></td><td style="padding:6px; border:1px solid #383a40;">CtL-</td><td>Canal de commande (tEr / HMI / Mdb)</td><td>tEr</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>Fr1</b></td><td style="padding:6px; border:1px solid #383a40;">CtL-</td><td>Canal de consigne (PSS / AIV1 / LCC)</td><td>PSS</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>ACC</b></td><td style="padding:6px; border:1px solid #383a40;">FUn-</td><td>Temps d'accélération (s)</td><td>3.0 s</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>dEC</b></td><td style="padding:6px; border:1px solid #383a40;">FUn-</td><td>Temps de décélération (s)</td><td>3.0 s</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>LSP</b></td><td style="padding:6px; border:1px solid #383a40;">FUn-</td><td>Petite vitesse (Hz)</td><td>0.0 Hz</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>HSP</b></td><td style="padding:6px; border:1px solid #383a40;">FUn-</td><td>Grande vitesse (Hz)</td><td>50.0 Hz</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>SP2</b></td><td style="padding:6px; border:1px solid #383a40;">FUn- ➔ PSS-</td><td>2ème préselection de vitesse (Hz)</td><td>15.0 Hz</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>SP3</b></td><td style="padding:6px; border:1px solid #383a40;">FUn- ➔ PSS-</td><td>3ème préselection de vitesse (Hz)</td><td>30.0 Hz</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>r1</b></td><td style="padding:6px; border:1px solid #383a40;">FUn- ➔ rI-</td><td>Affectation Relais R1 (FLt / rUn)</td><td>FLt (Défaut)</td></tr>
-                <tr><td style="padding:6px; border:1px solid #383a40;"><b>r2</b></td><td style="padding:6px; border:1px solid #383a40;">FUn- ➔ rI-</td><td>Affectation Relais R2 (rUn / FLt)</td><td>rUn (Marche)</td></tr>
-            </tbody>
-        </table>
+        <div style="overflow-x: auto;">
+            <table style="width:100%; border-collapse:collapse; margin-top:10px; font-size:12px;">
+                <thead>
+                    <tr style="background:#16161a; color:#2cb67d; text-align:left;">
+                        <th style="padding:8px; border:1px solid #383a40;">Code</th>
+                        <th style="padding:8px; border:1px solid #383a40;">Sous-Menu</th>
+                        <th style="padding:8px; border:1px solid #383a40;">Désignation / Fonction</th>
+                        <th style="padding:8px; border:1px solid #383a40;">Valeur d'Usine</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>bFr</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Fréquence standard moteur (Hz)</td><td>50.0 Hz</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>UnS</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Tension nominale moteur (V)</td><td>400.0 V</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>nCr</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Courant nominal moteur (A)</td><td>4.2 A</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>FrS</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Fréquence nominale moteur (Hz)</td><td>50.0 Hz</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>nSP</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Vitesse nominale moteur (tr/min)</td><td>1440 RPM</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>tUn</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Auto-réglage / Tuning (nO / YES / dOn)</td><td>dOn</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>SFr</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Fréquence de découpage MLI (kHz)</td><td>4.0 kHz</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>Cd1</b></td><td style="padding:6px; border:1px solid #383a40;">CtL-</td><td>Canal de commande (tEr / HMI / Mdb)</td><td>tEr</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>Fr1</b></td><td style="padding:6px; border:1px solid #383a40;">CtL-</td><td>Canal de consigne (PSS / AIV1 / LCC)</td><td>PSS</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>ACC</b></td><td style="padding:6px; border:1px solid #383a40;">FUn-</td><td>Temps d'accélération (s)</td><td>3.0 s</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>dEC</b></td><td style="padding:6px; border:1px solid #383a40;">FUn-</td><td>Temps de décélération (s)</td><td>3.0 s</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>LSP</b></td><td style="padding:6px; border:1px solid #383a40;">FUn-</td><td>Petite vitesse (Hz)</td><td>0.0 Hz</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>HSP</b></td><td style="padding:6px; border:1px solid #383a40;">FUn-</td><td>Grande vitesse (Hz)</td><td>50.0 Hz</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>SP2</b></td><td style="padding:6px; border:1px solid #383a40;">FUn- ➔ PSS-</td><td>2ème préselection de vitesse (Hz)</td><td>15.0 Hz</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>SP3</b></td><td style="padding:6px; border:1px solid #383a40;">FUn- ➔ PSS-</td><td>3ème préselection de vitesse (Hz)</td><td>30.0 Hz</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>r1</b></td><td style="padding:6px; border:1px solid #383a40;">FUn- ➔ rI-</td><td>Affectation Relais R1 (FLt / rUn)</td><td>FLt (Défaut)</td></tr>
+                    <tr><td style="padding:6px; border:1px solid #383a40;"><b>r2</b></td><td style="padding:6px; border:1px solid #383a40;">FUn- ➔ rI-</td><td>Affectation Relais R2 (rUn / FLt)</td><td>rUn (Marche)</td></tr>
+                </tbody>
+            </table>
+        </div>
 
         <div style="margin-top:15px; background:#16161a; padding:10px; border-radius:6px;">
             <strong style="color:#ff8e3c;">Codification des principaux défauts :</strong>
