@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Simulateur Procédural ATV320 - Version Expert V3.3 (Auto-Save)</title>
+    <title>Simulateur Procédural ATV320 - Version Expert V3.4 (Fix ENT & Auto-Save & Lecture PDF)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body {
@@ -108,8 +108,49 @@
         .consigne-box { background: #16161a; padding: 8px; border-radius: 6px; font-size: 11px; margin-bottom: 8px; line-height: 1.3; border-left: 3px solid #7f5af0; }
         
         .btn-action { background: #2cb67d; color: #000; border: none; padding: 8px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; margin-top: 4px; }
-        .btn-pdf { background: #ff8e3c; color: #000; display: none; }
+        .btn-preview-pdf { background: #7f5af0; color: #fff; display: none; margin-top: 6px; }
+        .btn-pdf { background: #ff8e3c; color: #000; display: none; margin-top: 6px; }
         .terminal-modbus { background: #0f0e17; border: 1px solid #383a40; border-radius: 6px; height: 60px; padding: 4px; font-family: monospace; font-size: 9px; color: #2cb67d; overflow-y: auto; margin-top: 8px; }
+
+        /* SECTION LECTEUR ET PREVISUALISATION PDF */
+        .conteneur-pdf-viewer {
+            display: none;
+            width: 100%;
+            max-width: 1370px;
+            margin-top: 20px;
+            background: #242629;
+            border: 2px solid #383a40;
+            border-radius: 12px;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .visionneuse-papier {
+            background: #ffffff;
+            color: #111111;
+            padding: 30px;
+            border-radius: 6px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            line-height: 1.5;
+            user-select: text;
+        }
+        .visionneuse-papier h1 {
+            color: #008055;
+            border-bottom: 2px solid #008055;
+            padding-bottom: 6px;
+            margin-top: 0;
+            font-size: 20px;
+        }
+        .visionneuse-papier h3 {
+            color: #333;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 4px;
+            margin-top: 15px;
+        }
+        .visionneuse-papier ul {
+            padding-left: 20px;
+        }
 
         input[type="file"] { display: none; }
     </style>
@@ -215,6 +256,7 @@
         <div class="consigne-box" id="consigne-tp"></div>
 
         <button class="btn-action" onclick="evaluerTP()">Valider la Procédure</button>
+        <button class="btn-action btn-preview-pdf" id="btn-preview-pdf" onclick="afficherLecturePDF()">👁️ Prévisualiser / Lire PDF</button>
         <button class="btn-action btn-pdf" id="btn-pdf" onclick="exporterPDF()">📥 Télécharger Bilan PDF</button>
 
         <div id="resultat-tp" style="margin-top:8px; font-size:11px; padding:6px; border-radius:4px; display:none;"></div>
@@ -224,6 +266,14 @@
         </div>
     </div>
 
+</div>
+
+<!-- MODULE DE LECTURE ET PRÉVISUALISATION DU PDF -->
+<div class="conteneur-pdf-viewer" id="conteneur-pdf-viewer">
+    <div class="section-title" style="margin-bottom: 12px;">📄 Document Bilan TP (Aperçu PDF)</div>
+    <div class="visionneuse-papier" id="document-pdf-render">
+        <!-- Le contenu du document PDF s'insère dynamiquement ici -->
+    </div>
 </div>
 
 <script>
@@ -275,7 +325,7 @@
         tp2: { titre: "TP 2 : Plaque & Tuning", consignes: "Régler <strong>UnS = 400.0 V</strong>, <strong>nCr = 4.2 A</strong> et <strong>tUn = dOn</strong>.", attentes: { UnS: 400.0, nCr: 4.2, tUn: "dOn" } },
         tp3: { titre: "TP 3 : Relais de Signalisation", consignes: "Affecter le relais <strong>r2 = rUn</strong> (Signalisation marche) dans FUn- > rI-.", attentes: { r2: "rUn" } },
         tp4: { titre: "TP 4 : Frequence Découpage MLI", consignes: "Augmenter la fréquence de hachage IGBT à <strong>SFr = 12.0 kHz</strong> pour réduire le bruit.", attentes: { SFr: 12.0 } },
-        tp5: { titre: "TP 5 : Multi-vitesses & Câblage", consignes: "Régler <strong>SP2 = 15.0 Hz</strong>, <strong>SP3 = 30.0 Hz</strong> et raccorder toutes les lignes.", attentes: { SP2: 15.0, SP3: 30.0, Cd1: "tEr" } }
+        tp5: { titre: "TP 5 : Multi-vitesses & Dépannage", consignes: "Régler <strong>SP2 = 15.0 Hz</strong>, <strong>SP3 = 30.0 Hz</strong> et raccorder toutes les lignes.", attentes: { SP2: 15.0, SP3: 30.0, Cd1: "tEr" } }
     };
 
     let cablage = { alim: true, moteur: true, pot: true };
@@ -494,13 +544,31 @@
         mettreAjourEcran();
     }
 
+    /* FIX ACTION ENT */
     function actionEnt() {
-        if (cheminActuel.length === 1) { cheminActuel = [menuATV320.enfants[0]]; indexActuel = 0; mettreAjourEcran(); return; }
+        if (cheminActuel.length === 1) { 
+            cheminActuel = [menuATV320.enfants[0]]; 
+            indexActuel = 0; 
+            modeEdition = false;
+            mettreAjourEcran(); 
+            return; 
+        }
+
         let noeud = cheminActuel[cheminActuel.length - 1];
-        let selection = noeud.enfants[indexActuel];
-        if (modeEdition) { modeEdition = false; sauvegarderDansLocalStorage(); }
-        else if (selection.type === "menu") { cheminActuel.push(selection); indexActuel = 0; }
-        else if (selection.type === "param" || selection.type === "enum") { modeEdition = true; }
+        let selection = noeud.enfants ? noeud.enfants[indexActuel] : null;
+
+        if (!selection) return;
+
+        if (modeEdition) { 
+            modeEdition = false; 
+            sauvegarderDansLocalStorage(); 
+        } else if (selection.type === "menu" && selection.enfants && selection.enfants.length > 0) { 
+            cheminActuel.push(selection); 
+            indexActuel = 0; 
+        } else if (selection.type === "param" || selection.type === "enum") { 
+            modeEdition = true; 
+        }
+        
         mettreAjourEcran();
     }
 
@@ -727,10 +795,13 @@
         box.style.display = "block";
         box.style.background = note >= 10 ? "#1e4620" : "#5c1d24";
         box.innerHTML = `<strong>Note Procédure : ${note} / 20</strong>` + (modeChallenge ? `<br>Temps Challenge : ${document.getElementById("chrono-val").innerText}` : "");
+        
+        document.getElementById("btn-preview-pdf").style.display = "block";
         document.getElementById("btn-pdf").style.display = "block";
     }
 
-    function exporterPDF() {
+    /* GENERATION DU CONTENU DU DOCUMENT PDF */
+    function genererContenuHTMLPDF() {
         const nom = document.getElementById("nom-etudiant").value || "Non renseigné";
         const prenom = document.getElementById("prenom-etudiant").value || "Non renseigné";
         const tpTitre = banquesTP[document.getElementById("select-tp").value].titre;
@@ -739,26 +810,43 @@
         for (let k in valeursUsineDefaut) {
             let val = obtenirValeurParam(k);
             if (val !== valeursUsineDefaut[k]) {
-                modifsHTML += `<li><strong>${k}</strong> : ${val} (Usine : ${valeursUsineDefaut[k]})</li>`;
+                modifsHTML += `<li><strong>${k}</strong> : ${val} <em>(Valeur Usine : ${valeursUsineDefaut[k]})</em></li>`;
             }
         }
-        if (!modifsHTML) modifsHTML = "<li>Aucun paramètre modifié par rapport à l'usine.</li>";
+        if (!modifsHTML) modifsHTML = "<li>Aucun paramètre modifié par rapport à la configuration d'usine.</li>";
 
-        let el = document.createElement("div");
-        el.style.padding = "25px";
-        el.style.fontFamily = "Arial, sans-serif";
-        el.style.color = "#111";
-        el.innerHTML = `
-            <h1 style="color:#2cb67d; border-bottom:2px solid #2cb67d;">Bilan Évaluation ATV320</h1>
+        return `
+            <h1>Bilan Évaluation ATV320</h1>
             <p><strong>Stagiaire / Étudiant :</strong> ${prenom} ${nom}</p>
-            <p><strong>Module :</strong> ${tpTitre}</p>
-            <p><strong>Date :</strong> ${new Date().toLocaleString()}</p>
-            <hr>
-            <h3>Résultats d'évaluation</h3>
-            <p>${document.getElementById("resultat-tp").innerHTML}</p>
-            <h3>Paramètres Modifiés :</h3>
+            <p><strong>Module d'Évaluation :</strong> ${tpTitre}</p>
+            <p><strong>Date de Génération :</strong> ${new Date().toLocaleString()}</p>
+            <hr style="border: 0; border-top: 1px solid #ccc;">
+            <h3>Résultats de la Validation Procédurale</h3>
+            <div>${document.getElementById("resultat-tp").innerHTML}</div>
+            <h3>Récapitulatif des Paramètres Modifiés :</h3>
             <ul>${modifsHTML}</ul>
         `;
+    }
+
+    /* AFFICHER LA LECTURE DU PDF EN LIGNE */
+    function afficherLecturePDF() {
+        const conteneur = document.getElementById("conteneur-pdf-viewer");
+        const rendu = document.getElementById("document-pdf-render");
+        rendu.innerHTML = genererContenuHTMLPDF();
+        conteneur.style.display = "block";
+        conteneur.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    /* EXPORT EN FICHIER PDF */
+    function exporterPDF() {
+        const nom = document.getElementById("nom-etudiant").value || "Eleve";
+        const prenom = document.getElementById("prenom-etudiant").value || "TP";
+        
+        let el = document.createElement("div");
+        el.className = "visionneuse-papier";
+        el.style.padding = "25px";
+        el.innerHTML = genererContenuHTMLPDF();
+        
         html2pdf().from(el).save(`Rapport_ATV320_${nom}_${prenom}.pdf`);
     }
 
