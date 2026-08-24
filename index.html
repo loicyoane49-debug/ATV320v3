@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Simulateur Procédural ATV320 - Version Expert V3.4 (Fix ENT & Auto-Save & Lecture PDF)</title>
+    <title>Simulateur Procédural ATV320 - Version Expert V3.5 (avec Doc Technique Intégrée)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body {
@@ -39,6 +39,7 @@
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(44, 182, 125, 0.2);
         }
+        .btn-outil.doc { background: #008055; color: #fff; }
         .btn-outil.challenge { background: #ff8e3c; color: #fff; }
         .btn-outil.json { background: #7f5af0; color: #fff; }
         .btn-outil.reset-cache { background: #e53170; color: #fff; }
@@ -158,6 +159,7 @@
 <body>
 
 <div class="barre-outils">
+    <button class="btn-outil doc" onclick="document.getElementById('modal-doc').style.display='flex'">📖 Doc Technique ATV320</button>
     <button class="btn-outil json" onclick="exporterJSON()">💾 Exporter Config (JSON)</button>
     <button class="btn-outil json" onclick="document.getElementById('import-json').click()">📂 Importer Config</button>
     <input type="file" id="import-json" accept=".json" onchange="importerJSON(event)">
@@ -276,6 +278,59 @@
     </div>
 </div>
 
+<!-- FENÊTRE MODALE DE DOCUMENTATION TECHNIQUE -->
+<div id="modal-doc" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999; justify-content:center; align-items:center;">
+    <div style="background:#242629; border:2px solid #383a40; border-radius:12px; width:90%; max-width:850px; max-height:85vh; overflow-y:auto; padding:20px; color:#fffffe; font-size:13px; line-height:1.5;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #2cb67d; padding-bottom:8px; margin-bottom:15px;">
+            <h2 style="margin:0; color:#2cb67d; font-size:18px;">📖 Guide & Documentation Technique ATV320</h2>
+            <button onclick="document.getElementById('modal-doc').style.display='none'" style="background:#e53170; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">✕ Fermer</button>
+        </div>
+        
+        <p><strong>Arborescence des menus :</strong> COnF ➔ FULL ➔ drC- / CtL- / FUn-</p>
+
+        <table style="width:100%; border-collapse:collapse; margin-top:10px; font-size:12px;">
+            <thead>
+                <tr style="background:#16161a; color:#2cb67d; text-align:left;">
+                    <th style="padding:8px; border:1px solid #383a40;">Code</th>
+                    <th style="padding:8px; border:1px solid #383a40;">Sous-Menu</th>
+                    <th style="padding:8px; border:1px solid #383a40;">Désignation / Fonction</th>
+                    <th style="padding:8px; border:1px solid #383a40;">Valeur d'Usine</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>bFr</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Fréquence standard moteur (Hz)</td><td>50.0 Hz</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>UnS</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Tension nominale moteur (V)</td><td>400.0 V</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>nCr</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Courant nominal moteur (A)</td><td>4.2 A</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>FrS</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Fréquence nominale moteur (Hz)</td><td>50.0 Hz</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>nSP</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Vitesse nominale moteur (tr/min)</td><td>1440 RPM</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>tUn</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Auto-réglage / Tuning (nO / YES / dOn)</td><td>dOn</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>SFr</b></td><td style="padding:6px; border:1px solid #383a40;">drC-</td><td>Fréquence de découpage MLI (kHz)</td><td>4.0 kHz</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>Cd1</b></td><td style="padding:6px; border:1px solid #383a40;">CtL-</td><td>Canal de commande (tEr / HMI / Mdb)</td><td>tEr</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>Fr1</b></td><td style="padding:6px; border:1px solid #383a40;">CtL-</td><td>Canal de consigne (PSS / AIV1 / LCC)</td><td>PSS</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>ACC</b></td><td style="padding:6px; border:1px solid #383a40;">FUn-</td><td>Temps d'accélération (s)</td><td>3.0 s</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>dEC</b></td><td style="padding:6px; border:1px solid #383a40;">FUn-</td><td>Temps de décélération (s)</td><td>3.0 s</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>LSP</b></td><td style="padding:6px; border:1px solid #383a40;">FUn-</td><td>Petite vitesse (Hz)</td><td>0.0 Hz</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>HSP</b></td><td style="padding:6px; border:1px solid #383a40;">FUn-</td><td>Grande vitesse (Hz)</td><td>50.0 Hz</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>SP2</b></td><td style="padding:6px; border:1px solid #383a40;">FUn- ➔ PSS-</td><td>2ème préselection de vitesse (Hz)</td><td>15.0 Hz</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>SP3</b></td><td style="padding:6px; border:1px solid #383a40;">FUn- ➔ PSS-</td><td>3ème préselection de vitesse (Hz)</td><td>30.0 Hz</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>r1</b></td><td style="padding:6px; border:1px solid #383a40;">FUn- ➔ rI-</td><td>Affectation Relais R1 (FLt / rUn)</td><td>FLt (Défaut)</td></tr>
+                <tr><td style="padding:6px; border:1px solid #383a40;"><b>r2</b></td><td style="padding:6px; border:1px solid #383a40;">FUn- ➔ rI-</td><td>Affectation Relais R2 (rUn / FLt)</td><td>rUn (Marche)</td></tr>
+            </tbody>
+        </table>
+
+        <div style="margin-top:15px; background:#16161a; padding:10px; border-radius:6px;">
+            <strong style="color:#ff8e3c;">Codification des principaux défauts :</strong>
+            <ul style="margin:5px 0 0 0; padding-left:20px;">
+                <li><b>NLP</b> : Tension réseau absente (Disjonction R/L1-S/L2-T/L3)</li>
+                <li><b>OPF1</b> : Coupure d'une phase moteur en sortie (U-V-W)</li>
+                <li><b>OCF</b> : Surintensité instantanée (Rampes d'accélération trop courtes)</li>
+                <li><b>AnF</b> : Rupture du signal analogique AI1 (&lt; 0.2V)</li>
+                <li><b>OHF</b> : Surchauffe variateur (Fréquence de découpage MLI trop élevée prolongée)</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
 <script>
     const STORAGE_KEY = "ATV320_SIMULATOR_STATE_V1";
 
@@ -339,7 +394,6 @@
     let runHMI = false;
     let tempsFonctionnementMoteur = 0;
 
-    /* RESTRUCTURATION PILE NAVIGATION */
     let cheminActuel = [menuATV320];
     let indicesStack = [0];
     let modeEdition = false;
@@ -389,7 +443,6 @@
         chercher(menuATV320);
     }
 
-    /* GESTION LOCALSTORAGE DU TP */
     function sauvegarderDansLocalStorage() {
         let params = {};
         for (let k in valeursUsineDefaut) params[k] = obtenirValeurParam(k);
@@ -499,7 +552,6 @@
         sauvegarderDansLocalStorage();
     }
 
-    /* MISE À JOUR ÉCRAN SIMULATEUR */
     function mettreAjourEcran() {
         const ecran = document.getElementById("affichage");
         if (!cablage.alim) { ecran.innerText = ""; ecran.style.background = "#050505"; return; }
@@ -534,7 +586,6 @@
         }
     }
 
-    /* ACTIONS BOUTONS DE NAVIGATION */
     function actionHaut() {
         if (ecranAccueil) {
             ecranAccueil = false;
@@ -845,7 +896,6 @@
         document.getElementById("btn-pdf").style.display = "block";
     }
 
-    /* GENERATION DU CONTENU DU DOCUMENT PDF */
     function genererContenuHTMLPDF() {
         const nom = document.getElementById("nom-etudiant").value || "Non renseigné";
         const prenom = document.getElementById("prenom-etudiant").value || "Non renseigné";
@@ -873,7 +923,6 @@
         `;
     }
 
-    /* AFFICHER LA LECTURE DU PDF EN LIGNE */
     function afficherLecturePDF() {
         const conteneur = document.getElementById("conteneur-pdf-viewer");
         const rendu = document.getElementById("document-pdf-render");
@@ -882,7 +931,6 @@
         conteneur.scrollIntoView({ behavior: 'smooth' });
     }
 
-    /* EXPORT EN FICHIER PDF */
     function exporterPDF() {
         const nom = document.getElementById("nom-etudiant").value || "Eleve";
         const prenom = document.getElementById("prenom-etudiant").value || "TP";
