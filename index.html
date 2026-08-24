@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Simulateur Procédural ATV320 - Version Expert V3</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body {
+            background-color: #16161a;
+            color: #fffffe;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 15px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+            box-sizing: border-box;
+        }
+
+        .barre-outils {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .btn-outil {
+            background: #2cb67d;
+            color: #010101;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(44, 182, 125, 0.2);
+        }
+        .btn-outil.challenge { background: #ff8e3c; color: #fff; }
+        .btn-outil.json { background: #7f5af0; color: #fff; }
+
+        .plateforme { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; max-width: 1400px; width: 100%; }
+
+        /* VARIATEUR & RELAIS */
+        .variateur { background-color: #242629; padding: 18px; border-radius: 12px; border: 2px solid #383a40; width: 310px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        .ecran {
+            background-color: #0f0e17; color: #ff8e3c; font-family: 'Courier New', monospace;
+            font-size: 36px; font-weight: bold; text-align: right; padding: 12px; border-radius: 6px;
+            margin-bottom: 15px; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); height: 42px; line-height: 42px;
+        }
+        .clignotement { animation: clignoterLed 0.25s infinite alternate; }
+        @keyframes clignoterLed { from { opacity: 1; } to { opacity: 0.1; } }
+
+        .controles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        button.btn-atv { background-color: #383a40; color: white; border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        .btn-esc { background-color: #e53170 !important; }
+        .btn-ent { background-color: #2cb67d !important; color: #000 !important; }
+        .btn-run { background-color: #2cb67d !important; color: #000 !important; }
+        .btn-stop { background-color: #e53170 !important; }
+        .molette { grid-column: span 2; display: flex; justify-content: space-between; }
+        .molette button { width: 48%; }
+
+        /* VOYANTS RELAIS R1 / R2 */
+        .panneau-relais { display: flex; justify-content: space-around; background: #16161a; padding: 8px; border-radius: 6px; margin-top: 12px; border: 1px solid #383a40; }
+        .voyant-box { text-align: center; font-size: 10px; color: #94a1b2; }
+        .led { width: 14px; height: 14px; border-radius: 50%; background: #444; margin: 4px auto 0 auto; box-shadow: 0 0 4px #000; }
+        .led.verte.actif { background: #2cb67d; box-shadow: 0 0 10px #2cb67d; }
+        .led.rouge.actif { background: #e53170; box-shadow: 0 0 10px #e53170; }
+
+        /* BORNIER & CÂBLAGE VIRTUEL */
+        .carte-bornier { background: #242629; border: 2px solid #383a40; border-radius: 12px; padding: 15px; width: 310px; }
+        .section-title { font-size: 12px; color: #2cb67d; font-weight: bold; margin-bottom: 8px; text-align: center; border-bottom: 1px solid #383a40; padding-bottom: 4px; }
+        .cablan-item { display: flex; justify-content: space-between; align-items: center; background: #16161a; padding: 6px 10px; border-radius: 4px; margin-bottom: 6px; font-size: 11px; }
+        .btn-fil { background: #e53170; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 10px; }
+        .btn-fil.connecte { background: #2cb67d; color: #000; }
+
+        .interrupteurs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+        .switch-container { text-align: center; font-size: 10px; background: #16161a; padding: 4px; border-radius: 4px; }
+        .switch-btn { background: #555; color: white; border: none; padding: 4px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; }
+        .switch-btn.active { background: #7f5af0; }
+
+        /* OSCILLOSCOPE & U/F */
+        .carte-visu { background: #242629; border: 2px solid #383a40; border-radius: 12px; padding: 15px; width: 330px; display: flex; flex-direction: column; gap: 10px; }
+        canvas { background: #0f0e17; border: 1px solid #383a40; border-radius: 6px; width: 100%; height: 95px; }
+
+        /* PANNEAU EVALUATION & CHALLENGE */
+        .carte-droite { background: #242629; border: 2px solid #383a40; border-radius: 12px; padding: 15px; width: 340px; }
+        .chrono-box { background: #ff8e3c; color: #000; text-align: center; font-weight: bold; padding: 6px; border-radius: 6px; margin-bottom: 10px; font-size: 14px; display: none; }
+        
+        .champs-etudiant { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+        .input-etudiant { background: #16161a; border: 1px solid #383a40; color: white; padding: 6px; border-radius: 4px; width: 100%; box-sizing: border-box; font-size: 11px; }
+        .select-tp { width: 100%; background: #16161a; color: #2cb67d; border: 1px solid #383a40; padding: 6px; border-radius: 4px; font-weight: bold; margin-bottom: 8px; font-size: 11px; }
+        .consigne-box { background: #16161a; padding: 8px; border-radius: 6px; font-size: 11px; margin-bottom: 8px; line-height: 1.3; border-left: 3px solid #7f5af0; }
+        
+        .btn-action { background: #2cb67d; color: #000; border: none; padding: 8px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; margin-top: 4px; }
+        .btn-pdf { background: #ff8e3c; color: #000; display: none; }
+        .terminal-modbus { background: #0f0e17; border: 1px solid #383a40; border-radius: 6px; height: 60px; padding: 4px; font-family: monospace; font-size: 9px; color: #2cb67d; overflow-y: auto; margin-top: 8px; }
+
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="barre-outils">
+    <button class="btn-outil json" onclick="exporterJSON()">💾 Exporter Config (JSON)</button>
+    <button class="btn-outil json" onclick="document.getElementById('import-json').click()">📂 Importer Config</button>
+    <input type="file" id="import-json" accept=".json" onchange="importerJSON(event)">
+    <button class="btn-outil challenge" onclick="lancerChallenge()">⏱️ Mode Challenge Dépannage</button>
+</div>
+
+<div class="plateforme">
+
+    <!-- VARIATEUR ATV320 & VOYANTS RELAIS -->
+    <div class="variateur">
+        <div class="ecran" id="affichage">rdY</div>
+        
+        <div class="controles">
+            <button class="btn-atv btn-esc" onclick="actionEsc()">ESC</button>
+            <button class="btn-atv btn-ent" onclick="actionEnt()">ENT</button>
+            <div class="molette">
+                <button class="btn-atv" onclick="actionHaut()">▲</button>
+                <button class="btn-atv" onclick="actionBas()">▼</button>
+            </div>
+            <button class="btn-atv btn-run" onclick="actionRunHMI()">RUN</button>
+            <button class="btn-atv btn-stop" onclick="actionStopHMI()">STOP</button>
+        </div>
+
+        <div class="panneau-relais">
+            <div class="voyant-box">Relais R1 (Défaut)<div class="led rouge" id="led-r1"></div></div>
+            <div class="voyant-box">Relais R2 (Marche)<div class="led verte" id="led-r2"></div></div>
+        </div>
+
+        <!-- POTENTIOMÈTRE ANALOGIQUE -->
+        <div style="margin-top: 12px; background: #16161a; padding: 8px; border-radius: 6px; text-align: center; font-size: 11px;">
+            <div>Potentiomètre AI1 : <strong id="val-ai1" style="color: #2cb67d;">5.0 V</strong></div>
+            <input type="range" min="0" max="10" step="0.1" value="5" style="width:100%; accent-color:#2cb67d;" id="slider-ai1" oninput="ajusterAI1(this.value)">
+        </div>
+    </div>
+
+    <!-- BORNIER ET CÂBLAGE VIRTUEL -->
+    <div class="carte-bornier">
+        <div class="section-title">🔌 Câblage Bornier Virtuel</div>
+        
+        <div class="cablan-item">
+            <span>R/L1 - S/L2 - T/L3 (Alim 400V)</span>
+            <button class="btn-fil connecte" id="btn-cabl-alim" onclick="basculerCablage('alim')">RACCORDÉ</button>
+        </div>
+        <div class="cablan-item">
+            <span>U - V - W (Ligne Moteur)</span>
+            <button class="btn-fil connecte" id="btn-cabl-mot" onclick="basculerCablage('moteur')">RACCORDÉ</button>
+        </div>
+        <div class="cablan-item">
+            <span>10V - AI1 - COM (Potentiomètre)</span>
+            <button class="btn-fil connecte" id="btn-cabl-pot" onclick="basculerCablage('pot')">RACCORDÉ</button>
+        </div>
+
+        <div class="section-title" style="margin-top: 10px;">Entrées Logiques (DI1-DI4)</div>
+        <div class="interrupteurs">
+            <div class="switch-container"><div>DI1 (FWD)</div><button class="switch-btn" id="sw-di1" onclick="basculerDI(1)">OFF</button></div>
+            <div class="switch-container"><div>DI2 (REV)</div><button class="switch-btn" id="sw-di2" onclick="basculerDI(2)">OFF</button></div>
+            <div class="switch-container"><div>DI3 (PS2)</div><button class="switch-btn" id="sw-di3" onclick="basculerDI(3)">OFF</button></div>
+            <div class="switch-container"><div>DI4 (PS4)</div><button class="switch-btn" id="sw-di4" onclick="basculerDI(4)">OFF</button></div>
+        </div>
+
+        <button class="btn-action" style="margin-top:10px; background:#7f5af0; color:#fff;" id="btn-audio" onclick="basculerAudio()">🔊 Acoustic MLI (SFr)</button>
+    </div>
+
+    <!-- VISUALISATION OSCILLOSCOPE MLI & LOI U/F -->
+    <div class="carte-visu">
+        <div class="section-title">📊 Signal PWM MLI (Découpage IGBT)</div>
+        <canvas id="oscillo-mli"></canvas>
+
+        <div class="section-title">📈 Courbe Tension / Fréquence (Loi U/f)</div>
+        <canvas id="graph-uf"></canvas>
+    </div>
+
+    <!-- ÉVALUATION & CHALLENGE DÉPANNAGE -->
+    <div class="carte-droite">
+        <div class="chrono-box" id="chrono-box">⏱️ Temps Challenge : <span id="chrono-val">00:00</span></div>
+
+        <div class="champs-etudiant">
+            <input type="text" id="nom-etudiant" class="input-etudiant" placeholder="Nom">
+            <input type="text" id="prenom-etudiant" class="input-etudiant" placeholder="Prénom">
+        </div>
+
+        <select id="select-tp" class="select-tp" onchange="changerTP()">
+            <option value="tp1">TP 1 : Vérification Réglages d'Usine</option>
+            <option value="tp2">TP 2 : Plaque Signalétique & Auto-réglage</option>
+            <option value="tp3">TP 3 : Configuration Relais R1 / R2</option>
+            <option value="tp4">TP 4 : Ajustement Découpage MLI (SFr)</option>
+            <option value="tp5">TP 5 : Diagnostic Pannes Câblage Ligne</option>
+        </select>
+
+        <div class="consigne-box" id="consigne-tp"></div>
+
+        <button class="btn-action" onclick="evaluerTP()">Valider la Procédure</button>
+        <button class="btn-action btn-pdf" id="btn-pdf" onclick="exporterPDF()">📥 Télécharger Bilan PDF</button>
+
+        <div id="resultat-tp" style="margin-top:8px; font-size:11px; padding:6px; border-radius:4px; display:none;"></div>
+
+        <div class="terminal-modbus" id="console-modbus">
+            [SYS] Initialisation Bus RS485 Modbus...<br>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // 1. Structure Arborescente ATV320 avec Relais et Fréquence Découpage (SFr)
+    const valeursUsineDefaut = {
+        bFr: 50.0, UnS: 400.0, nCr: 4.2, FrS: 50.0, nSP: 1440, tUn: "dOn", FCS: "nO",
+        Cd1: "tEr", Fr1: "PSS", ACC: 3.0, dEC: 3.0, LSP: 0.0, HSP: 50.0, SP2: 15.0, SP3: 30.0,
+        SFr: 4.0, r1: "FLt", r2: "rUn", rSt: "nO"
+    };
+
+    let menuATV320 = {
+        id: "ROOT", type: "menu", enfants: [
+            { id: "COnF", type: "menu", enfants: [
+                { id: "FULL", type: "menu", enfants: [
+                    { id: "drC-", type: "menu", enfants: [
+                        { id: "bFr", type: "param", valeur: 50.0, pas: 10.0, paramKey: "bFr" },
+                        { id: "UnS", type: "param", valeur: 400.0, pas: 10.0, paramKey: "UnS" },
+                        { id: "nCr", type: "param", valeur: 4.2, pas: 0.1, paramKey: "nCr" },
+                        { id: "SFr", type: "param", valeur: 4.0, pas: 1.0, paramKey: "SFr" }, // 2 à 16 kHz
+                        { id: "tUn", type: "enum", options: ["nO", "YES", "dOn"], indexOpt: 2, paramKey: "tUn" },
+                        { id: "FCS", type: "enum", options: ["nO", "InI"], indexOpt: 0, paramKey: "FCS" }
+                    ]},
+                    { id: "CtL-", type: "menu", enfants: [
+                        { id: "Cd1", type: "enum", options: ["tEr", "HMI", "Mdb"], indexOpt: 0, paramKey: "Cd1" },
+                        { id: "Fr1", type: "enum", options: ["PSS", "AIV1", "LCC"], indexOpt: 0, paramKey: "Fr1" }
+                    ]},
+                    { id: "FUn-", type: "menu", enfants: [
+                        { id: "ACC", type: "param", valeur: 3.0, pas: 0.1, paramKey: "ACC" },
+                        { id: "dEC", type: "param", valeur: 3.0, pas: 0.1, paramKey: "dEC" },
+                        { id: "LSP", type: "param", valeur: 0.0, pas: 0.1, paramKey: "LSP" },
+                        { id: "HSP", type: "param", valeur: 50.0, pas: 0.1, paramKey: "HSP" },
+                        { id: "rI-", type: "menu", enfants: [
+                            { id: "r1", type: "enum", options: ["FLt", "rUn"], indexOpt: 0, paramKey: "r1" },
+                            { id: "r2", type: "enum", options: ["rUn", "FLt"], indexOpt: 0, paramKey: "r2" }
+                        ]}
+                    ]}
+                ]}
+            ]}
+        ]
+    };
+
+    const banquesTP = {
+        tp1: { titre: "TP 1 : Vérification d'Usine", consignes: "Vérifier que <strong>bFr = 50.0 Hz</strong> et <strong>HSP = 50.0 Hz</strong>.", attentes: { bFr: 50.0, HSP: 50.0 } },
+        tp2: { titre: "TP 2 : Plaque & Tuning", consignes: "Régler <strong>UnS = 400.0 V</strong>, <strong>nCr = 4.2 A</strong> et <strong>tUn = dOn</strong>.", attentes: { UnS: 400.0, nCr: 4.2, tUn: "dOn" } },
+        tp3: { titre: "TP 3 : Relais de Signalisation", consignes: "Affecter le relais <strong>r2 = rUn</strong> (Signalisation marche) dans FUn- > rI-.", attentes: { r2: "rUn" } },
+        tp4: { titre: "TP 4 : Frequence Découpage MLI", consignes: "Augmenter la fréquence de hachage IGBT à <strong>SFr = 12.0 kHz</strong> pour réduire le bruit.", attentes: { SFr: 12.0 } },
+        tp5: { titre: "TP 5 : Diagnostic Câblage", consignes: "Raccorder les lignes de puissance et régler <strong>Cd1 = tEr</strong>.", attentes: { Cd1: "tEr" } }
+    };
+
+    // État Système & Câblage
+    let cablage = { alim: true, moteur: true, pot: true };
+    let di1 = false, di2 = false, di3 = false, di4 = false;
+    let tensionAI1 = 5.0;
+    let frequenceReelle = 0.0;
+    let defautActif = null;
+    let runHMI = false;
+    let cheminActuel = [menuATV320];
+    let indexActuel = 0;
+    let modeEdition = false;
+
+    // Challenge Dépannage
+    let modeChallenge = false;
+    let secondesChrono = 0;
+    let timerInterval = null;
+
+    // Audio & Canvas
+    let audioCtx = null, oscIGBT = null, gainMaster = null, audioAutorise = false;
+    const canvasMLI = document.getElementById("oscillo-mli");
+    const ctxMLI = canvasMLI.getContext("2d");
+    const canvasUF = document.getElementById("graph-uf");
+    const ctxUF = canvasUF.getContext("2d");
+
+    function obtenirValeurParam(key) {
+        let res = null;
+        function chercher(n) {
+            if (n.paramKey === key) res = n.type === "enum" ? n.options[n.indexOpt] : n.valeur;
+            if (n.enfants) n.enfants.forEach(chercher);
+        }
+        chercher(menuATV320);
+        return res;
+    }
+
+    function fixerValeurParam(key, val) {
+        function chercher(n) {
+            if (n.paramKey === key) {
+                if (n.type === "enum") n.indexOpt = n.options.indexOf(val);
+                else n.valeur = val;
+            }
+            if (n.enfants) n.enfants.forEach(chercher);
+        }
+        chercher(menuATV320);
+    }
+
+    // 2. Gestion du Câblage Virtuel
+    function basculerCablage(type) {
+        cablage[type] = !cablage[type];
+        const btn = document.getElementById(`btn-cabl-${type}`);
+        btn.className = cablage[type] ? "btn-fil connecte" : "btn-fil";
+        btn.innerText = cablage[type] ? "RACCORDÉ" : "COUPÉ";
+    }
+
+    // 3. Navigation Clavier ATV320
+    function mettreAjourEcran() {
+        const ecran = document.getElementById("affichage");
+        if (!cablage.alim) { ecran.innerText = ""; ecran.style.background = "#050505"; return; }
+        ecran.style.background = "#0f0e17";
+
+        if (defautActif) { ecran.innerText = defautActif; ecran.style.color = "#e53170"; return; }
+        
+        let noeudActuel = cheminActuel[cheminActuel.length - 1];
+        let item = noeudActuel.enfants ? noeudActuel.enfants[indexActuel] : null;
+
+        if (cheminActuel.length === 1 && !modeEdition) {
+            if (frequenceReelle > 0.1) { ecran.innerText = frequenceReelle.toFixed(1); ecran.style.color = "#2cb67d"; }
+            else { ecran.innerText = "rdY"; ecran.style.color = "#e53170"; }
+            return;
+        }
+
+        if (modeEdition && item) {
+            ecran.innerText = item.type === "enum" ? item.options[item.indexOpt] : item.valeur.toFixed(1);
+            ecran.style.color = "#2cb67d";
+        } else if (item) {
+            ecran.innerText = item.id;
+            ecran.style.color = "#ff8e3c";
+        }
+    }
+
+    function actionHaut() {
+        let noeud = cheminActuel[cheminActuel.length - 1];
+        let item = noeud.enfants ? noeud.enfants[indexActuel] : null;
+        if (modeEdition && item) {
+            if (item.type === "enum") item.indexOpt = (item.indexOpt + 1) % item.options.length;
+            else item.valeur = parseFloat((item.valeur + item.pas).toFixed(1));
+        } else if (noeud.enfants && indexActuel < noeud.enfants.length - 1) indexActuel++;
+        mettreAjourEcran();
+    }
+
+    function actionBas() {
+        let noeud = cheminActuel[cheminActuel.length - 1];
+        let item = noeud.enfants ? noeud.enfants[indexActuel] : null;
+        if (modeEdition && item) {
+            if (item.type === "enum") item.indexOpt = (item.indexOpt - 1 + item.options.length) % item.options.length;
+            else if (item.valeur - item.pas >= 0) item.valeur = parseFloat((item.valeur - item.pas).toFixed(1));
+        } else if (indexActuel > 0) indexActuel--;
+        mettreAjourEcran();
+    }
+
+    function actionEnt() {
+        if (cheminActuel.length === 1) { cheminActuel = [menuATV320.enfants[0]]; indexActuel = 0; mettreAjourEcran(); return; }
+        let noeud = cheminActuel[cheminActuel.length - 1];
+        let selection = noeud.enfants[indexActuel];
+        if (modeEdition) { modeEdition = false; }
+        else if (selection.type === "menu") { cheminActuel.push(selection); indexActuel = 0; }
+        else if (selection.type === "param" || selection.type === "enum") { modeEdition = true; }
+        mettreAjourEcran();
+    }
+
+    function actionEsc() {
+        if (modeEdition) modeEdition = false;
+        else if (cheminActuel.length > 1) { cheminActuel.pop(); indexActuel = 0; }
+        mettreAjourEcran();
+    }
+
+    function actionRunHMI() { if (obtenirValeurParam("Cd1") === "HMI" && !defautActif) runHMI = true; }
+    function actionStopHMI() { runHMI = false; }
+
+    function basculerDI(num) {
+        if (num === 1) di1 = !di1; else if (num === 2) di2 = !di2;
+        else if (num === 3) di3 = !di3; else if (num === 4) di4 = !di4;
+        let btn = document.getElementById(`sw-di${num}`);
+        let state = eval(`di${num}`);
+        btn.className = state ? "switch-btn active" : "switch-btn";
+        btn.innerText = state ? "ON" : "OFF";
+    }
+
+    function ajusterAI1(val) {
+        tensionAI1 = parseFloat(val);
+        document.getElementById("val-ai1").innerText = tensionAI1.toFixed(1) + " V";
+    }
+
+    // 4. Moteur de Simulation Principale
+    function boucleMoteur() {
+        if (!cablage.alim) defautActif = "NLP"; // No Line Power
+        else if (!cablage.moteur && frequenceReelle > 0.5) defautActif = "OPF1"; // Output Phase Loss
+        
+        const cd1 = obtenirValeurParam("Cd1");
+        const fr1 = obtenirValeurParam("Fr1");
+        const hsp = obtenirValeurParam("HSP") || 50.0;
+        const acc = obtenirValeurParam("ACC") || 3.0;
+        const dec = obtenirValeurParam("dEC") || 3.0;
+
+        let ordreRun = false;
+        if (!defautActif) {
+            if (cd1 === "tEr" && (di1 || di2)) ordreRun = true;
+            if (cd1 === "HMI" && runHMI) ordreRun = true;
+        }
+
+        let consigne = 0.0;
+        if (ordreRun) {
+            consigne = (fr1 === "AIV1" && cablage.pot) ? (tensionAI1 / 10.0) * hsp : hsp;
+        }
+
+        if (frequenceReelle < consigne) frequenceReelle = Math.min(consigne, frequenceReelle + (hsp / acc) * 0.05);
+        else if (frequenceReelle > consigne) frequenceReelle = Math.max(0, frequenceReelle - (hsp / dec) * 0.05);
+
+        // Pilotage des Relais R1 & R2
+        const r1Val = obtenirValeurParam("r1");
+        const r2Val = obtenirValeurParam("r2");
+        const estEnMarche = frequenceReelle > 0.1;
+
+        document.getElementById("led-r1").className = (r1Val === "FLt" && defautActif) || (r1Val === "rUn" && estEnMarche) ? "led rouge actif" : "led rouge";
+        document.getElementById("led-r2").className = (r2Val === "rUn" && estEnMarche) || (r2Val === "FLt" && defautActif) ? "led verte actif" : "led verte";
+
+        mettreAjourAudio();
+        dessinerOscilloMLI();
+        dessinerGraphUF();
+        mettreAjourEcran();
+
+        setTimeout(boucleMoteur, 50);
+    }
+
+    // 5. Visualisation Graphique (MLI PWM & Loi U/f)
+    function dessinerOscilloMLI() {
+        ctxMLI.clearRect(0, 0, canvasMLI.width, canvasMLI.height);
+        const sfr = obtenirValeurParam("SFr") || 4.0;
+        ctxMLI.strokeStyle = "#2cb67d"; ctxMLI.lineWidth = 1.5; ctxMLI.beginPath();
+        
+        for (let x = 0; x < canvasMLI.width; x++) {
+            let pwm = Math.sin(x * 0.05) > Math.sin(x * sfr * 0.2) ? 15 : 75;
+            if (frequenceReelle < 0.1) pwm = 45;
+            if (x === 0) ctxMLI.moveTo(x, pwm); else ctxMLI.lineTo(x, pwm);
+        }
+        ctxMLI.stroke();
+    }
+
+    function dessinerGraphUF() {
+        ctxUF.clearRect(0, 0, canvasUF.width, canvasUF.height);
+        ctxUF.strokeStyle = "#ff8e3c"; ctxUF.lineWidth = 2; ctxUF.beginPath();
+        ctxUF.moveTo(20, 80); ctxUF.lineTo(180, 20); ctxUF.lineTo(280, 20); ctxUF.stroke();
+
+        // Point de fonctionnement courant
+        let posX = 20 + (frequenceReelle / 50.0) * 160;
+        let posY = 80 - (Math.min(frequenceReelle, 50.0) / 50.0) * 60;
+        ctxUF.fillStyle = "#7f5af0"; ctxUF.beginPath(); ctxUF.arc(posX, posY, 5, 0, Math.PI * 2); ctxUF.fill();
+    }
+
+    // 6. Audio MLI Dynamique (SFr)
+    function mettreAjourAudio() {
+        if (audioAutorise && oscIGBT) {
+            const sfr = obtenirValeurParam("SFr") || 4.0;
+            oscIGBT.frequency.value = sfr * 1000;
+            gainMaster.gain.value = frequenceReelle > 0.1 ? 0.03 : 0;
+        }
+    }
+
+    function basculerAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            oscIGBT = audioCtx.createOscillator();
+            gainMaster = audioCtx.createGain();
+            oscIGBT.connect(gainMaster); gainMaster.connect(audioCtx.destination);
+            oscIGBT.start();
+        }
+        audioAutorise = !audioAutorise;
+        document.getElementById("btn-audio").style.background = audioAutorise ? "#2cb67d" : "#7f5af0";
+    }
+
+    // 7. Mode Challenge Dépannage & Export/Import JSON
+    function lancerChallenge() {
+        modeChallenge = true;
+        secondesChrono = 0;
+        document.getElementById("chrono-box").style.display = "block";
+        if (timerInterval) clearInterval(timerInterval);
+        
+        timerInterval = setInterval(() => {
+            secondesChrono++;
+            let m = Math.floor(secondesChrono / 60).toString().padStart(2, '0');
+            let s = (secondesChrono % 60).toString().padStart(2, '0');
+            document.getElementById("chrono-val").innerText = `${m}:${s}`;
+        }, 1000);
+
+        // Perturbations aléatoires
+        cablage.moteur = false;
+        fixerValeurParam("Cd1", "Mdb");
+        fixerValeurParam("SFr", 2.0);
+        document.getElementById("btn-cabl-mot").className = "btn-fil";
+        document.getElementById("btn-cabl-mot").innerText = "COUPÉ";
+        alert("⏱️ CHALLENGE LANCÉ !\nUn ou plusieurs défauts ont été injectés. Rétablissez le fonctionnement normal le plus rapidement possible.");
+    }
+
+    function exporterJSON() {
+        let data = {};
+        for (let k in valeursUsineDefaut) data[k] = obtenirValeurParam(k);
+        let blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        let a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+        a.download = "Config_ATV320.json"; a.click();
+    }
+
+    function importerJSON(event) {
+        let reader = new FileReader();
+        reader.onload = (e) => {
+            let config = JSON.parse(e.target.result);
+            for (let k in config) fixerValeurParam(k, config[k]);
+            alert("Configuration JSON chargée avec succès !");
+            mettreAjourEcran();
+        };
+        reader.readAsText(event.target.files[0]);
+    }
+
+    function changerTP() {
+        const tp = banquesTP[document.getElementById("select-tp").value];
+        document.getElementById("consigne-tp").innerHTML = `<strong>${tp.titre}</strong><br>${tp.consignes}`;
+    }
+
+    function evaluerTP() {
+        if (modeChallenge && timerInterval) clearInterval(timerInterval);
+        const tp = banquesTP[document.getElementById("select-tp").value];
+        let pts = 0, total = Object.keys(tp.attentes).length;
+        for (let p in tp.attentes) { if (obtenirValeurParam(p) === tp.attentes[p]) pts++; }
+        let note = Math.round((pts / total) * 20);
+        
+        const box = document.getElementById("resultat-tp");
+        box.style.display = "block";
+        box.style.background = note >= 10 ? "#1e4620" : "#5c1d24";
+        box.innerHTML = `<strong>Note Procédure : ${note} / 20</strong>` + (modeChallenge ? `<br>Temps Challenge : ${document.getElementById("chrono-val").innerText}` : "");
+        document.getElementById("btn-pdf").style.display = "block";
+    }
+
+    function exporterPDF() {
+        let el = document.createElement("div");
+        el.style.padding = "20px";
+        el.innerHTML = `<h2>Rapport TP ATV320</h2><p>Évalué le ${new Date().toLocaleString()}</p>${document.getElementById("resultat-tp").innerHTML}`;
+        html2pdf().from(el).save("Rapport_TP_ATV320.pdf");
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        changerTP();
+        mettreAjourEcran();
+        boucleMoteur();
+    });
+</script>
+
+</body>
+</html>
