@@ -293,6 +293,8 @@
                         { id: "bFr", type: "param", valeur: 50.0, pas: 10.0, paramKey: "bFr" },
                         { id: "UnS", type: "param", valeur: 400.0, pas: 10.0, paramKey: "UnS" },
                         { id: "nCr", type: "param", valeur: 4.2, pas: 0.1, paramKey: "nCr" },
+                        { id: "FrS", type: "param", valeur: 50.0, pas: 10.0, paramKey: "FrS" },
+                        { id: "nSP", type: "param", valeur: 1440, pas: 10, paramKey: "nSP" },
                         { id: "SFr", type: "param", valeur: 4.0, pas: 1.0, paramKey: "SFr" },
                         { id: "tUn", type: "enum", options: ["nO", "YES", "dOn"], indexOpt: 2, paramKey: "tUn" },
                         { id: "FCS", type: "enum", options: ["nO", "InI"], indexOpt: 0, paramKey: "FCS" }
@@ -336,9 +338,12 @@
     let defautActif = null;
     let runHMI = false;
     let tempsFonctionnementMoteur = 0;
+
+    /* RESTRUCTURATION PILE NAVIGATION */
     let cheminActuel = [menuATV320];
-    let indexActuel = 0;
+    let indicesStack = [0];
     let modeEdition = false;
+    let ecranAccueil = true;
 
     let modeChallenge = false;
     let secondesChrono = 0;
@@ -374,8 +379,10 @@
     function fixerValeurParam(key, val) {
         function chercher(n) {
             if (n.paramKey === key) {
-                if (n.type === "enum") n.indexOpt = n.options.indexOf(val);
-                else n.valeur = parseFloat(val);
+                if (n.type === "enum") {
+                    let idx = n.options.indexOf(val);
+                    if (idx !== -1) n.indexOpt = idx;
+                } else n.valeur = parseFloat(val);
             }
             if (n.enfants) n.enfants.forEach(chercher);
         }
@@ -492,6 +499,7 @@
         sauvegarderDansLocalStorage();
     }
 
+    /* MISE À JOUR ÉCRAN SIMULATEUR */
     function mettreAjourEcran() {
         const ecran = document.getElementById("affichage");
         if (!cablage.alim) { ecran.innerText = ""; ecran.style.background = "#050505"; return; }
@@ -499,10 +507,7 @@
 
         if (defautActif) { ecran.innerText = defautActif; ecran.style.color = "#e53170"; return; }
         
-        let noeudActuel = cheminActuel[cheminActuel.length - 1];
-        let item = noeudActuel.enfants ? noeudActuel.enfants[indexActuel] : null;
-
-        if (cheminActuel.length === 1 && !modeEdition) {
+        if (ecranAccueil) {
             if (Math.abs(frequenceReelle) > 0.1) {
                 ecran.innerText = (sensInverse ? "-" : "") + Math.abs(frequenceReelle).toFixed(1);
                 ecran.style.color = "#2cb67d";
@@ -513,68 +518,108 @@
             return;
         }
 
+        let noeudActuel = cheminActuel[cheminActuel.length - 1];
+        let idx = indicesStack[indicesStack.length - 1];
+        let item = noeudActuel.enfants ? noeudActuel.enfants[idx] : null;
+
         if (modeEdition && item) {
             ecran.innerText = item.type === "enum" ? item.options[item.indexOpt] : item.valeur.toFixed(1);
             ecran.style.color = "#2cb67d";
         } else if (item) {
             ecran.innerText = item.id;
             ecran.style.color = "#ff8e3c";
+        } else {
+            ecran.innerText = noeudActuel.id;
+            ecran.style.color = "#ff8e3c";
         }
     }
 
+    /* ACTIONS BOUTONS DE NAVIGATION */
     function actionHaut() {
+        if (ecranAccueil) {
+            ecranAccueil = false;
+            indicesStack = [0];
+            mettreAjourEcran();
+            return;
+        }
         let noeud = cheminActuel[cheminActuel.length - 1];
-        let item = noeud.enfants ? noeud.enfants[indexActuel] : null;
+        let idx = indicesStack[indicesStack.length - 1];
+        let item = noeud.enfants ? noeud.enfants[idx] : null;
+
         if (modeEdition && item) {
-            if (item.type === "enum") item.indexOpt = (item.indexOpt + 1) % item.options.length;
-            else item.valeur = parseFloat((item.valeur + item.pas).toFixed(1));
+            if (item.type === "enum") {
+                item.indexOpt = (item.indexOpt + 1) % item.options.length;
+            } else {
+                item.valeur = parseFloat((item.valeur + item.pas).toFixed(1));
+            }
             sauvegarderDansLocalStorage();
-        } else if (noeud.enfants && indexActuel < noeud.enfants.length - 1) indexActuel++;
+        } else if (noeud.enfants && idx < noeud.enfants.length - 1) {
+            indicesStack[indicesStack.length - 1]++;
+        }
         mettreAjourEcran();
     }
 
     function actionBas() {
+        if (ecranAccueil) {
+            ecranAccueil = false;
+            indicesStack = [0];
+            mettreAjourEcran();
+            return;
+        }
         let noeud = cheminActuel[cheminActuel.length - 1];
-        let item = noeud.enfants ? noeud.enfants[indexActuel] : null;
+        let idx = indicesStack[indicesStack.length - 1];
+        let item = noeud.enfants ? noeud.enfants[idx] : null;
+
         if (modeEdition && item) {
-            if (item.type === "enum") item.indexOpt = (item.indexOpt - 1 + item.options.length) % item.options.length;
-            else if (item.valeur - item.pas >= 0) item.valeur = parseFloat((item.valeur - item.pas).toFixed(1));
+            if (item.type === "enum") {
+                item.indexOpt = (item.indexOpt - 1 + item.options.length) % item.options.length;
+            } else if (item.valeur - item.pas >= 0) {
+                item.valeur = parseFloat((item.valeur - item.pas).toFixed(1));
+            }
             sauvegarderDansLocalStorage();
-        } else if (indexActuel > 0) indexActuel--;
+        } else if (idx > 0) {
+            indicesStack[indicesStack.length - 1]--;
+        }
         mettreAjourEcran();
     }
 
-    /* FIX ACTION ENT */
     function actionEnt() {
-        if (cheminActuel.length === 1) { 
-            cheminActuel = [menuATV320.enfants[0]]; 
-            indexActuel = 0; 
-            modeEdition = false;
-            mettreAjourEcran(); 
-            return; 
+        if (ecranAccueil) {
+            ecranAccueil = false;
+            indicesStack = [0];
+            mettreAjourEcran();
+            return;
         }
 
         let noeud = cheminActuel[cheminActuel.length - 1];
-        let selection = noeud.enfants ? noeud.enfants[indexActuel] : null;
+        let idx = indicesStack[indicesStack.length - 1];
+        let selection = noeud.enfants ? noeud.enfants[idx] : null;
 
         if (!selection) return;
 
-        if (modeEdition) { 
-            modeEdition = false; 
-            sauvegarderDansLocalStorage(); 
-        } else if (selection.type === "menu" && selection.enfants && selection.enfants.length > 0) { 
-            cheminActuel.push(selection); 
-            indexActuel = 0; 
-        } else if (selection.type === "param" || selection.type === "enum") { 
-            modeEdition = true; 
+        if (modeEdition) {
+            modeEdition = false;
+            sauvegarderDansLocalStorage();
+            logConsole(`Validation paramètre : [${selection.paramKey || selection.id}]`);
+        } else if (selection.type === "menu" && selection.enfants && selection.enfants.length > 0) {
+            cheminActuel.push(selection);
+            indicesStack.push(0);
+        } else if (selection.type === "param" || selection.type === "enum") {
+            modeEdition = true;
         }
-        
+
         mettreAjourEcran();
     }
 
     function actionEsc() {
-        if (modeEdition) modeEdition = false;
-        else if (cheminActuel.length > 1) { cheminActuel.pop(); indexActuel = 0; }
+        if (modeEdition) {
+            modeEdition = false;
+        } else if (cheminActuel.length > 1) {
+            cheminActuel.pop();
+            indicesStack.pop();
+        } else {
+            ecranAccueil = true;
+        }
         mettreAjourEcran();
     }
 
