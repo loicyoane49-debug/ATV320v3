@@ -82,7 +82,7 @@
             margin-top: 12px;
         }
 
-        /* SIMULATEUR */
+        /* SIMULATEUR (Caché par défaut) */
         #main-app {
             display: none;
             width: 100%;
@@ -189,10 +189,6 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.5); font-family: Arial, sans-serif; font-size: 13px; line-height: 1.5;
         }
 
-        .doc-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-        .doc-table th, .doc-table td { border: 1px solid #383a40; padding: 6px 8px; text-align: left; }
-        .doc-table th { background: #16161a; color: #2cb67d; }
-
         @media (max-width: 768px) {
             .barre-outils { flex-direction: column; align-items: stretch; }
             .btn-outil { width: 100%; text-align: center; }
@@ -276,11 +272,11 @@
 
         <div class="carte-visu">
             <div class="section-title">📉 Profil de Vitesse f(t) en Temps Réel (Hz)</div>
-            <canvas id="graph-vitesse" width="300" height="80"></canvas>
+            <canvas id="graph-vitesse"></canvas>
             <div class="section-title">📊 Signal PWM MLI (Découpage IGBT)</div>
-            <canvas id="oscillo-mli" width="300" height="80"></canvas>
+            <canvas id="oscillo-mli"></canvas>
             <div class="section-title">📈 Courbe Tension / Fréquence (Loi U/f)</div>
-            <canvas id="graph-uf" width="300" height="80"></canvas>
+            <canvas id="graph-uf"></canvas>
         </div>
 
         <div class="carte-droite">
@@ -311,77 +307,24 @@
     </div>
 </div>
 
-<!-- DOCUMENTATION TECHNIQUE COMPLÈTE -->
+<!-- DOCUMENTATION TECHNIQUE -->
 <div id="modal-doc" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999; justify-content:center; align-items:center;">
     <div style="background:#242629; border:2px solid #383a40; border-radius:12px; width:90%; max-width:850px; max-height:85vh; overflow-y:auto; padding:20px; color:#fffffe; font-size:13px; line-height:1.5;">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #2cb67d; padding-bottom:8px; margin-bottom:15px;">
             <h2 style="margin:0; color:#2cb67d; font-size:18px;">📖 Guide & Documentation Technique ATV320</h2>
             <button onclick="document.getElementById('modal-doc').style.display='none'" style="background:#e53170; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">✕ Fermer</button>
         </div>
-        
         <p><strong>Arborescence des menus :</strong> COnF ➔ FULL ➔ drC- / CtL- / FUn-</p>
-        
-        <h3 style="color:#2cb67d; margin-top:15px;">1. Paramètres Moteur (Menu drC-)</h3>
-        <table class="doc-table">
-            <tr><th>Code</th><th>Nom</th><th>Plage / Valeur usine</th><th>Description</th></tr>
-            <tr><td>bFr</td><td>Fréquence base</td><td>50.0 Hz</td><td>Fréquence standard réseau (50 Hz / 60 Hz)</td></tr>
-            <tr><td>UnS</td><td>Tension Nominale</td><td>400.0 V</td><td>Tension nominale moteur de la plaque signalétique</td></tr>
-            <tr><td>nCr</td><td>Courant Nominal</td><td>4.2 A</td><td>Courant nominal assigné au moteur</td></tr>
-            <tr><td>FrS</td><td>Fréquence Nominale</td><td>50.0 Hz</td><td>Fréquence nominale statorique moteur</td></tr>
-            <tr><td>nSP</td><td>Vitesse Nominale</td><td>1440 RPM</td><td>Vitesse de rotation nominale du moteur</td></tr>
-            <tr><td>SFr</td><td>Fréquence Hachage</td><td>4.0 kHz</td><td>Fréquence de découpage MLI/PWM des IGBT</td></tr>
-            <tr><td>tUn</td><td>Auto-tuning</td><td>nO / YES / dOn</td><td>Auto-réglage des constantes statoriques</td></tr>
-            <tr><td>FCS</td><td>Retour Usine</td><td>nO / InI</td><td>Réinitialisation aux paramètres d'usine</td></tr>
-        </table>
-
-        <h3 style="color:#2cb67d; margin-top:15px;">2. Commande & Référence (Menu CtL-)</h3>
-        <table class="doc-table">
-            <tr><th>Code</th><th>Nom</th><th>Choix possibles</th><th>Description</th></tr>
-            <tr><td>Cd1</td><td>Canal Commande</td><td>tEr / HMI / Mdb</td><td>tEr = Bornier, HMI = Face avant, Mdb = RS485 Modbus</td></tr>
-            <tr><td>Fr1</td><td>Canal Référence</td><td>PSS / AIV1 / LCC</td><td>PSS = Vitesses présélectionnées, AIV1 = Analogique 0-10V</td></tr>
-        </table>
-
-        <h3 style="color:#2cb67d; margin-top:15px;">3. Fonctions Avancées (Menu FUn-)</h3>
-        <table class="doc-table">
-            <tr><th>Code</th><th>Sous-menu</th><th>Description</th></tr>
-            <tr><td>ACC / dEC</td><td>-</td><td>Rampes d'accélération et de décélération (secondes)</td></tr>
-            <tr><td>LSP / HSP</td><td>-</td><td>Petite vitesse (LSP) et Grande vitesse (HSP) en Hz</td></tr>
-            <tr><td>SP2 / SP3</td><td>PSS-</td><td>Vitesses présélectionnées 2 et 3 (activation via DI3/DI4)</td></tr>
-            <tr><td>r1 / r2</td><td>rI-</td><td>Affectation des relais de sortie R1 (Défaut) et R2 (Marche)</td></tr>
-            <tr><td>rSt</td><td>rSt-</td><td>Reset manuel des défauts mémorisés</td></tr>
-        </table>
-
-        <h3 style="color:#e53170; margin-top:15px;">4. Tableau Diagnostic des Défauts (Codes Erreurs)</h3>
-        <table class="doc-table">
-            <tr><th>Code</th><th>Désignation</th><th>Cause Probable</th><th>Remède / Action</th></tr>
-            <tr><td>NLP</td><td>No Line Power</td><td>Absence d'alimentation 400V sur R/L1-S/L2-T/L3</td><td>Vérifier le disjoncteur amont et le câblage alim</td></tr>
-            <tr><td>OPF1</td><td>Output Phase Loss</td><td>Coupure d'une phase moteur entre U-V-W</td><td>Raccorder la ligne moteur U-V-W au variateur</td></tr>
-            <tr><td>OCF</td><td>Overcurrent</td><td>Surintensité (Rampe ACC trop courte)</td><td>Augmenter le temps de la rampe ACC (> 0.5s)</td></tr>
-            <tr><td>AnF</td><td>Analog Input Fault</td><td>Perte du signal potentiomètre AI1</td><td>Câbler le bornier 10V-AI1-COM et régler la tension</td></tr>
-            <tr><td>OHF</td><td>Drive Overheat</td><td>Surchauffe IGBT (Hachage MLI trop élevé)</td><td>Réduire la fréquence SFr (<= 12 kHz)</td></tr>
-        </table>
     </div>
 </div>
 
-<!-- SCRIPT FIREBASE ET ACCÈS 72H -->
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+<!-- SCRIPT VÉRIFICATION CODE TOTP ET ACCÈS 72H -->
+<script>
+    // URL de la Cloud Function (à adapter si besoin de tester en local avec l'émulateur)
+    const URL_VERIFICATION = "https://atv320-verify-code.loicyoane49.workers.dev";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyABzuLggtdfhwseIR0c0fSBOHED2Bkvxdk",
-      authDomain: "atv320v3.firebaseapp.com",
-      databaseURL: "https://atv320v3-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "atv320v3",
-      storageBucket: "atv320v3.firebasestorage.app",
-      messagingSenderId: "605596971484",
-      appId: "1:605596971484:web:078cdc1af3ba645a91df19",
-      measurementId: "G-RC9MP636TR"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
     const DUREE_72H_MS = 3 * 24 * 60 * 60 * 1000;
+    const CLE_LOCALSTORAGE = "atv320_access_start";
 
     window.seConnecter = async function() {
         const codeSaisi = document.getElementById("codeEtudiant").value.trim();
@@ -394,42 +337,43 @@
         }
 
         try {
-            const q = query(collection(db, "etudiants"), where("codeAcces", "==", codeSaisi));
-            const querySnapshot = await getDocs(q);
+            const reponse = await fetch(URL_VERIFICATION + "?code=" + encodeURIComponent(codeSaisi));
+            const data = await reponse.json();
 
-            if (querySnapshot.empty) {
+            if (!data.valid) {
                 msg.innerText = "Code d'accès incorrect.";
                 return;
             }
 
-            const docEtudiant = querySnapshot.docs[0];
-            const data = docEtudiant.data();
-            const refDoc = doc(db, "etudiants", docEtudiant.id);
-            const maintenant = Date.now();
-
-            if (!data.firstLoginTimestamp || data.firstLoginTimestamp === 0) {
-                await updateDoc(refDoc, { firstLoginTimestamp: maintenant });
-                lancerApplication();
-                return;
-            }
-
-            const tempsEcoule = maintenant - data.firstLoginTimestamp;
-
-            if (tempsEcoule > DUREE_72H_MS) {
-                msg.innerText = "Accès expiré (3 jours dépassés). Demandez à votre formateur de réinitialiser le compte.";
-            } else {
-                lancerApplication();
-            }
+            localStorage.setItem(CLE_LOCALSTORAGE, Date.now().toString());
+            lancerApplication();
         } catch (e) {
             console.error(e);
             msg.innerText = "Erreur de connexion au serveur.";
         }
     };
 
+    function verifierAccesExistant() {
+        const debut = localStorage.getItem(CLE_LOCALSTORAGE);
+        if (!debut) return false;
+
+        const tempsEcoule = Date.now() - parseInt(debut, 10);
+        if (tempsEcoule < DUREE_72H_MS) {
+            lancerApplication();
+            return true;
+        }
+
+        localStorage.removeItem(CLE_LOCALSTORAGE);
+        return false;
+    }
+
     function lancerApplication() {
         document.getElementById("login-overlay").style.display = "none";
         document.getElementById("main-app").style.display = "flex";
     }
+
+    // Vérifie dès le chargement de la page si un accès valide (< 72h) existe déjà
+    verifierAccesExistant();
 </script>
 
 <!-- SCRIPT SIMULATEUR ATV320 -->
@@ -471,9 +415,6 @@
                         { id: "rI-", type: "menu", enfants: [
                             { id: "r1", type: "enum", options: ["FLt", "rUn"], indexOpt: 0, paramKey: "r1" },
                             { id: "r2", type: "enum", options: ["rUn", "FLt"], indexOpt: 0, paramKey: "r2" }
-                        ]},
-                        { id: "rSt-", type: "menu", enfants: [
-                            { id: "rSt", type: "enum", options: ["nO", "YES"], indexOpt: 0, paramKey: "rSt" }
                         ]}
                     ]}
                 ]}
@@ -813,7 +754,7 @@
         cablage.moteur = false; fixerValeurParam("Cd1", "Mdb"); fixerValeurParam("ACC", 0.2); fixerValeurParam("SFr", 16.0);
         document.getElementById("btn-cabl-mot").className = "btn-fil"; document.getElementById("btn-cabl-mot").innerText = "COUPÉ";
         sauvegarderDansLocalStorage();
-        alert("⏱️ CHALLENGE DÉMARRÉ ! Diagnostic des anomalies requis.");
+        alert("⏱️ CHALLENGE DÉMARRÉ !");
     }
 
     function exporterJSON() {
